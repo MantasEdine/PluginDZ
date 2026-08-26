@@ -1,0 +1,58 @@
+name: Plugin.dz CI
+
+on:
+  push:
+    paths: ['plugin-dz/**', '.github/workflows/plugin-dz.yml']
+  pull_request:
+    paths: ['plugin-dz/**']
+
+jobs:
+  server:
+    name: API (typecheck + build)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: plugin_dz_ci
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: ['5432:5432']
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/plugin_dz_ci?schema=public
+      JWT_SECRET: ci-secret
+    defaults:
+      run:
+        working-directory: plugin-dz/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugin-dz/server/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run typecheck
+      - run: npm run build
+
+  web:
+    name: Vitrine (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin-dz/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugin-dz/web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # L'API n'est pas lancée en CI : les pages se rendent à la demande, le build passe.
+      - run: npm run build

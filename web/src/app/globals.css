@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-navy-50: #eef4fc;
+  --color-navy-100: #d6e4f7;
+  --color-navy-600: #1b4c92;
+  --color-navy-700: #12386e;
+  --color-navy-800: #0d2b55;
+  --color-navy-900: #081c39;
+  --color-plug-400: #4da2ff;
+  --color-plug-500: #1a85ff;
+  --color-plug-600: #0a6fe0;
+  --font-sans: 'Segoe UI', 'Noto Sans Arabic', system-ui, -apple-system, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #f6f8fb;
+  color: var(--color-navy-900);
+}
+
+/* En arabe on garde les mêmes composants : seule la direction change. */
+[dir='rtl'] body { font-family: 'Noto Sans Arabic', 'Segoe UI', system-ui, sans-serif; }
+
+.card {
+  @apply rounded-xl border border-slate-200 bg-white transition hover:border-plug-400 hover:shadow-lg;
+}
+/* Tailwind v4 n'autorise pas `@apply` sur une classe maison : chaque variante est écrite en entier. */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition;
+}
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition;
+  @apply bg-navy-700 text-white hover:bg-navy-800 disabled:opacity-50;
+}
+.btn-accent {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition;
+  @apply bg-plug-500 text-white hover:bg-plug-600 disabled:opacity-50;
+}
+.btn-outline {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition;
+  @apply border border-navy-700 text-navy-700 hover:bg-navy-50;
+}
+.field {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-plug-500 focus:ring-2 focus:ring-plug-500/20;
+}
+.label { @apply mb-1.5 block text-sm font-medium text-navy-800; }
+.badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold; }

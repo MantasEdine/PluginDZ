@@ -1,0 +1,192 @@
+// Schéma Prisma — Plugin.dz
+// Catalogue de chargeurs (téléphone / montre / caméra / vélo) en gros et demi-gros.
+// Pas de paiement en ligne : les commandes sont enregistrées puis traitées via Yalidine.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Marque (Hoco, Oppo, Sony, Samsung...)
+model Brand {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+  logoUrl   String?   @map("logo_url")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  products  Product[]
+
+  @@map("brands")
+}
+
+/// Type de chargeur — « Chargeur téléphone », « Chargeur montre »...
+model ChargerType {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  iconUrl  String?   @map("icon_url")
+  position Int       @default(0)
+  products Product[]
+
+  @@map("charger_types")
+}
+
+/// Modèle de produit. Les unités achetables sont les ProductVariant.
+model Product {
+  id            Int              @id @default(autoincrement())
+  name          String
+  slug          String           @unique
+  brandId       Int              @map("brand_id")
+  chargerTypeId Int              @map("charger_type_id")
+  /// Sous-type libre : « iPhone », « Type-C »... (nullable : seulement là où c'est utile)
+  subType       String?          @map("sub_type")
+  /// Les « détails » : description longue avec les spécifications
+  description   String           @default("")
+  imageUrl      String?          @map("image_url")
+  isPromo       Boolean          @default(false) @map("is_promo")
+  isActive      Boolean          @default(true) @map("is_active")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  brand       Brand            @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  chargerType ChargerType      @relation(fields: [chargerTypeId], references: [id], onDelete: Restrict)
+  variants    ProductVariant[]
+
+  @@index([brandId])
+  @@index([chargerTypeId])
+  @@index([isPromo])
+  @@map("products")
+}
+
+/// Unité achetable. Un produit sans vraie déclinaison possède une ligne par défaut.
+model ProductVariant {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  color     String?
+  power     String?
+  plugType  String? @map("plug_type")
+  /// Prix en DA (entier : le dinar n'a pas de centimes en usage courant)
+  price     Int
+  /// Ancien prix barré, pour les promos
+  oldPrice  Int?    @map("old_price")
+  stock     Int     @default(0)
+  sku       String? @unique
+  imageUrl  String? @map("image_url")
+  isDefault Boolean @default(false) @map("is_default")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  packItems  PackItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// Pack de gros : « 10× chargeur iPhone Hoco — 20 000 DA »
+model Pack {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  price       Int
+  oldPrice    Int?     @map("old_price")
+  description String   @default("")
+  imageUrl    String?  @map("image_url")
+  stock       Int      @default(0)
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  items      PackItem[]
+  orderItems OrderItem[]
+
+  @@map("packs")
+}
+
+/// Table de jonction : contenu d'un pack (N unités d'une ou plusieurs déclinaisons)
+model PackItem {
+  id        Int @id @default(autoincrement())
+  packId    Int @map("pack_id")
+  variantId Int @map("variant_id")
+  quantity  Int @default(1)
+
+  pack    Pack           @relation(fields: [packId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@unique([packId, variantId])
+  @@index([packId])
+  @@map("pack_items")
+}
+
+enum OrderStatus {
+  nouveau
+  confirme
+  expedie
+  annule
+}
+
+/// Commande client — aucun paiement en ligne, livraison via Yalidine
+model Order {
+  id              Int         @id @default(autoincrement())
+  reference       String      @unique
+  customerName    String      @map("customer_name")
+  customerPhone   String      @map("customer_phone")
+  /// Wilaya algérienne (parmi les 58) — indispensable pour Yalidine
+  customerWilaya  String      @map("customer_wilaya")
+  customerAddress String      @map("customer_address")
+  customerNote    String?     @map("customer_note")
+  status          OrderStatus @default(nouveau)
+  /// Total en DA, figé au moment de la commande
+  total           Int
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+/// Lignes de commande : une déclinaison OU un pack, jamais les deux.
+model OrderItem {
+  id        Int    @id @default(autoincrement())
+  orderId   Int    @map("order_id")
+  variantId Int?   @map("variant_id")
+  packId    Int?   @map("pack_id")
+  quantity  Int
+  /// Instantané du prix au moment de la commande : les prix changent, l'historique non.
+  unitPrice Int    @map("unit_price")
+  /// Libellé figé (« Hoco C12 20W — Blanc ») pour rester lisible même après suppression
+  label     String @default("")
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  pack    Pack?           @relation(fields: [packId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+enum AdminRole {
+  owner
+  admin
+}
+
+/// Comptes du back-office (le propriétaire + éventuels administrateurs)
+model AdminUser {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(admin)
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("admin_users")
+}
