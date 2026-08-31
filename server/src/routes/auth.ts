@@ -5,8 +5,16 @@ import { prisma } from '../prisma';
 import { HttpError } from '../lib/http-error';
 import { asyncHandler } from '../middleware/error';
 import { requireAdmin, signAdminToken } from '../middleware/auth';
+import { loginRateLimiter } from '../middleware/rate-limit';
 
 export const authRouter = Router();
+
+/**
+ * Hash bidon d'un mot de passe arbitraire. Comparé quand l'email est inconnu pour
+ * que la connexion prenne le même temps qu'avec un email existant : sans cela, le
+ * temps de réponse révélerait quels emails ont un compte.
+ */
+const DUMMY_HASH = bcrypt.hashSync('unused-placeholder-password', 10);
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Email invalide'),
@@ -15,14 +23,17 @@ const loginSchema = z.object({
 
 authRouter.post(
   '/login',
+  loginRateLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await prisma.adminUser.findUnique({ where: { email } });
 
     // Message identique dans les deux cas : on n'indique pas si l'email existe.
     const invalid = HttpError.unauthorized('Email ou mot de passe incorrect');
-    if (!user || !user.isActive) throw invalid;
-    if (!(await bcrypt.compare(password, user.passwordHash))) throw invalid;
+    // Toujours exécuter un bcrypt.compare (contre un hash bidon si besoin) pour ne pas
+    // révéler par le temps de réponse l'existence d'un compte.
+    const matches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+    if (!user || !user.isActive || !matches) throw invalid;
 
     await prisma.adminUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
