@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PUBLIC_API_URL, type Wilaya } from '@/lib/api';
@@ -23,7 +23,12 @@ export default function CheckoutPage() {
             .catch(() => setWilayas([]));
     }, []);
 
+    // Vider le panier après l'envoi rend `lines` vide : sans ce drapeau, la garde
+    // ci-dessous renverrait vers /panier et écraserait la navigation vers la confirmation.
+    const confirmed = useRef(false);
+
     useEffect(() => {
+        if (confirmed.current) return;
         if (ready && lines.length === 0) router.replace('/panier');
     }, [ready, lines.length, router]);
 
@@ -59,9 +64,20 @@ export default function CheckoutPage() {
             }
 
             // La confirmation lit ce résumé : la commande est déjà enregistrée côté serveur.
-            window.sessionStorage.setItem('plugin_last_order', JSON.stringify(payload.data));
+            const reference = typeof payload.data?.reference === 'string' ? payload.data.reference : null;
+            try {
+                window.sessionStorage.setItem('plugin_last_order', JSON.stringify(payload.data));
+            } catch {
+                /* stockage bloqué : la référence passe quand même par l'URL */
+            }
+
+            confirmed.current = true;
+            router.push(
+                reference
+                    ? `/commande/confirmation?ref=${encodeURIComponent(reference)}`
+                    : '/commande/confirmation',
+            );
             clear();
-            router.push(`/commande/confirmation?ref=${payload.data.reference}`);
         } catch {
             setError(t('common.error'));
             setSubmitting(false);
