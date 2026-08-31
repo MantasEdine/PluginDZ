@@ -151,6 +151,10 @@ const MESSAGES = {
     "شكرا! سنتصل بك قريبا لتأكيد التوصيل.",
   ],
   "confirm.reference": ["Votre référence", "رقم طلبك"],
+  "confirm.noReference": [
+    "Votre commande a bien été enregistrée, mais nous n’avons pas pu afficher votre référence ici. Contactez-nous pour la recevoir :",
+    "تم تسجيل طلبك بنجاح، لكن تعذّر عرض رقم الطلب هنا. تواصل معنا للحصول عليه:",
+  ],
   "confirm.back": ["Retour à la boutique", "العودة إلى المتجر"],
 
   "tracking.title": ["Suivre ma commande", "تتبع طلبي"],
