@@ -638,11 +638,42 @@ adminRouter.patch(
     const existing = await prisma.order.findUnique({ where: { id }, include: { items: true } });
     if (!existing) throw HttpError.notFound('Commande introuvable');
 
-    // Annuler une commande remet le stock réservé en rayon (une seule fois).
-    if (status === OrderStatus.annule && existing.status !== OrderStatus.annule) {
+    // Le stock réservé suit l'état de la commande via le drapeau `stockReleased` :
+    //  - passer à « annulée » rend le stock (une seule fois) ;
+    //  - revenir à un état actif le re-réserve (une seule fois).
+    // Sans ce garde-fou idempotent, une bascule annulée→confirmée→annulée gonflait
+    // le stock à chaque cycle.
+    const shouldRelease = status === OrderStatus.annule && !existing.stockReleased;
+    const shouldReserve = status !== OrderStatus.annule && existing.stockReleased;
+
+    if (shouldRelease || shouldReserve) {
+      const delta = shouldRelease ? 1 : -1; // +1 = rendre au rayon, -1 = re-réserver
       await prisma.$transaction(async (tx) => {
         for (const item of existing.items) {
-          if (item.variantId) {
+          if (shouldReserve) {
+            // Re-réservation : refuser si le stock est retombé sous la quantité.
+            if (item.variantId) {
+              const updated = await tx.productVariant.updateMany({
+                where: { id: item.variantId, stock: { gte: item.quantity } },
+                data: { stock: { decrement: item.quantity } },
+              });
+              if (updated.count === 0) {
+                throw HttpError.conflict(
+                  `Stock insuffisant pour re-confirmer « ${item.label} » — réappprovisionnez d'abord`,
+                );
+              }
+            } else if (item.packId) {
+              const updated = await tx.pack.updateMany({
+                where: { id: item.packId, stock: { gte: item.quantity } },
+                data: { stock: { decrement: item.quantity } },
+              });
+              if (updated.count === 0) {
+                throw HttpError.conflict(
+                  `Stock insuffisant pour re-confirmer « ${item.label} » — réapprovisionnez d'abord`,
+                );
+              }
+            }
+          } else if (item.variantId) {
             await tx.productVariant.update({
               where: { id: item.variantId },
               data: { stock: { increment: item.quantity } },
@@ -654,7 +685,10 @@ adminRouter.patch(
             });
           }
         }
-        await tx.order.update({ where: { id }, data: { status } });
+        await tx.order.update({
+          where: { id },
+          data: { status, stockReleased: delta === 1 },
+        });
       });
     } else {
       await prisma.order.update({ where: { id }, data: { status } });

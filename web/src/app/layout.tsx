@@ -6,6 +6,7 @@ import { LocaleProvider } from '@/components/LocaleProvider';
 import { CartProvider } from '@/components/CartProvider';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { VisitTracker } from '@/components/VisitTracker';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -59,6 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <body className="flex min-h-screen flex-col antialiased">
                 <LocaleProvider locale={locale}>
                     <CartProvider>
+                        <VisitTracker />
                         <Header />
                         <main className="flex-1">{children}</main>
                         <Footer />

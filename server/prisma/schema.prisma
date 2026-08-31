@@ -140,6 +140,9 @@ model Order {
   customerAddress String      @map("customer_address")
   customerNote    String?     @map("customer_note")
   status          OrderStatus @default(nouveau)
+  /// Vrai lorsque le stock réservé a été rendu (annulation). Empêche une double
+  /// remise en rayon et permet de re-réserver proprement à la reconfirmation.
+  stockReleased   Boolean     @default(false) @map("stock_released")
   /// Total en DA, figé au moment de la commande
   total           Int
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -170,6 +173,26 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
+}
+
+/// Visite d'une page publique — sert aux statistiques d'audience du back-office.
+/// Ne stocke aucune donnée personnelle : `visitorId` est un identifiant anonyme
+/// tiré au sort côté navigateur (cookie first-party), jamais l'IP ni un email.
+model Visit {
+  id        Int      @id @default(autoincrement())
+  /// Identifiant anonyme de navigateur (cookie), pour distinguer visiteurs uniques.
+  visitorId String   @map("visitor_id")
+  path      String
+  /// Domaine référent (d'où vient le visiteur), si connu.
+  referrer  String?
+  /// Source de trafic normalisée : utm_source, sinon domaine référent, sinon « direct ».
+  source    String   @default("direct")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@index([visitorId])
+  @@index([source])
+  @@map("visits")
 }
 
 enum AdminRole {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDa } from '@/lib/format';
@@ -27,6 +27,31 @@ function ConfirmationPageInner() {
   const params = useSearchParams();
   const [order, setOrder] = useState<Summary | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+  }, []);
+
+  async function copyReference(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // Navigateur sans accès presse-papiers : repli sur une sélection manuelle.
+      const area = document.createElement('textarea');
+      area.value = value;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); } catch { /* rien de plus à tenter */ }
+      document.body.removeChild(area);
+    }
+    setCopied(true);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 2000);
+  }
 
   useEffect(() => {
     try {
@@ -53,7 +78,33 @@ function ConfirmationPageInner() {
       {reference && (
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 text-start">
           <p className="text-sm text-slate-500">{t('confirm.reference')}</p>
-          <p className="text-2xl font-extrabold tracking-wide text-navy-700" dir="ltr">{reference}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <p className="text-2xl font-extrabold tracking-wide text-navy-700" dir="ltr">{reference}</p>
+            <button
+              type="button"
+              onClick={() => copyReference(reference)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-plug-500 px-3 py-1.5 text-sm font-semibold text-plug-500 transition hover:bg-plug-50"
+              aria-live="polite"
+            >
+              {copied ? (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.3 3.3 6.8-6.8a1 1 0 0 1 1.4 0Z" clipRule="evenodd" />
+                  </svg>
+                  {t('confirm.copied')}
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                    <rect x="7" y="7" width="9" height="9" rx="2" />
+                    <path d="M4 13V5a2 2 0 0 1 2-2h6" />
+                  </svg>
+                  {t('confirm.copy')}
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-slate-400">{t('confirm.copyHint')}</p>
 
           {items.length > 0 && (
             <>

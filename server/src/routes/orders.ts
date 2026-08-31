@@ -7,6 +7,7 @@ import { isValidWilaya } from '../lib/wilayas';
 import { orderReference } from '../lib/format';
 import { variantLabel } from '../lib/serialize';
 import { sendOrderNotification } from '../lib/mailer';
+import { orderRateLimiter, lookupRateLimiter } from '../middleware/rate-limit';
 
 export const ordersRouter = Router();
 
@@ -46,6 +47,7 @@ const createOrderSchema = z.object({
  */
 ordersRouter.post(
   '/',
+  orderRateLimiter,
   asyncHandler(async (req, res) => {
     const payload = createOrderSchema.parse(req.body);
 
@@ -199,6 +201,7 @@ ordersRouter.post(
  */
 ordersRouter.get(
   '/lookup',
+  lookupRateLimiter,
   asyncHandler(async (req, res) => {
     const schema = z.object({
       reference: z.string().trim().min(3),
