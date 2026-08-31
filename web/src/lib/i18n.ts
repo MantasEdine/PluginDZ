@@ -155,6 +155,12 @@ const MESSAGES = {
     "Votre commande a bien été enregistrée, mais nous n’avons pas pu afficher votre référence ici. Contactez-nous pour la recevoir :",
     "تم تسجيل طلبك بنجاح، لكن تعذّر عرض رقم الطلب هنا. تواصل معنا للحصول عليه:",
   ],
+  "confirm.copy": ["Copier", "نسخ"],
+  "confirm.copied": ["Copié !", "تم النسخ!"],
+  "confirm.copyHint": [
+    "Gardez cette référence pour suivre votre commande.",
+    "احتفظ بهذا الرقم لتتبع طلبك.",
+  ],
   "confirm.back": ["Retour à la boutique", "العودة إلى المتجر"],
 
   "tracking.title": ["Suivre ma commande", "تتبع طلبي"],

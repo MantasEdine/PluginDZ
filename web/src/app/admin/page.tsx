@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     ? [
         { label: 'Nouvelles commandes', value: stats.newOrders, href: '/admin/commandes?status=nouveau', accent: true },
         { label: 'Commandes au total', value: stats.totalOrders, href: '/admin/commandes' },
-        { label: 'Chiffre confirmé', value: formatDa(stats.confirmedRevenue), href: '/admin/commandes' },
+        { label: 'Chiffre confirmé', value: formatDa(stats.confirmedRevenue), href: '/admin/revenus' },
         { label: 'Produits actifs', value: stats.products, href: '/admin/produits' },
         { label: 'Packs actifs', value: stats.packs, href: '/admin/packs' },
         { label: 'Déclinaisons à réappro. (≤5)', value: stats.lowStock, href: '/admin/produits' },

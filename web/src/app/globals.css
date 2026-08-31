@@ -7,9 +7,13 @@
   --color-navy-700: #12386e;
   --color-navy-800: #0d2b55;
   --color-navy-900: #081c39;
+  --color-plug-50: #e8f2ff;
+  --color-plug-100: #cfe4ff;
   --color-plug-400: #4da2ff;
   --color-plug-500: #1a85ff;
   --color-plug-600: #0a6fe0;
+  --color-teal-500: #0ea5a4;
+  --color-teal-100: #ccf0ef;
   --font-sans: 'Segoe UI', 'Noto Sans Arabic', system-ui, -apple-system, sans-serif;
 }
 
