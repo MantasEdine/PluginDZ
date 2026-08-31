@@ -123,3 +123,89 @@ export async function visitsBetween(startDay: string, endDay: string): Promise<{
   const r = rows[0];
   return { views: Number(r?.views ?? 0), visitors: Number(r?.visitors ?? 0) };
 }
+
+
+export interface CampaignRow {
+  campaign: string;
+  source: string;
+  medium: string;
+  visitors: number;
+  views: number;
+  orders: number;
+  revenue: number;
+  conversion: number; // commandes / visiteurs, en %
+}
+
+/**
+ * Performance des campagnes depuis un jour donne : croise l'audience (visites portant
+ * une campagne) et les commandes attribuees a cette meme campagne. La cle de
+ * rapprochement est (campagne, source, medium) - les deux cotes sont normalises
+ * identiquement, donc comparables.
+ */
+export async function campaignPerformance(startDay: string): Promise<CampaignRow[]> {
+  const [visitRows, orderRows] = await Promise.all([
+    prisma.$queryRaw<{ campaign: string; source: string; medium: string; visitors: bigint; views: bigint }[]>`
+      SELECT campaign, source, medium,
+             COUNT(DISTINCT visitor_id) AS visitors,
+             COUNT(*) AS views
+      FROM visits
+      WHERE campaign IS NOT NULL
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+      GROUP BY campaign, source, medium`,
+    prisma.$queryRaw<{ campaign: string; source: string; medium: string; orders: bigint; revenue: bigint }[]>`
+      SELECT utm_campaign AS campaign,
+             COALESCE(utm_source, 'direct') AS source,
+             COALESCE(utm_medium, 'none') AS medium,
+             COUNT(*) AS orders,
+             COALESCE(SUM(total), 0) AS revenue
+      FROM orders
+      WHERE utm_campaign IS NOT NULL
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+      GROUP BY utm_campaign, utm_source, utm_medium`,
+  ]);
+
+  const key = (c: string, s: string, m: string) => `${c} ${s} ${m}`;
+  const rows = new Map<string, CampaignRow>();
+
+  for (const v of visitRows) {
+    rows.set(key(v.campaign, v.source, v.medium), {
+      campaign: v.campaign,
+      source: v.source,
+      medium: v.medium,
+      visitors: Number(v.visitors),
+      views: Number(v.views),
+      orders: 0,
+      revenue: 0,
+      conversion: 0,
+    });
+  }
+
+  for (const o of orderRows) {
+    const k = key(o.campaign, o.source, o.medium);
+    const existing = rows.get(k);
+    if (existing) {
+      existing.orders = Number(o.orders);
+      existing.revenue = Number(o.revenue);
+    } else {
+      // Commandes attribuees sans visite correspondante (ex. visite anterieure au tracking).
+      rows.set(k, {
+        campaign: o.campaign,
+        source: o.source,
+        medium: o.medium,
+        visitors: 0,
+        views: 0,
+        orders: Number(o.orders),
+        revenue: Number(o.revenue),
+        conversion: 0,
+      });
+    }
+  }
+
+  const out = [...rows.values()];
+  for (const r of out) {
+    r.conversion = r.visitors > 0 ? Math.round((r.orders / r.visitors) * 1000) / 10 : 0;
+  }
+  // Tri : d'abord par nombre de visiteurs, puis par commandes.
+  out.sort((a, b) => b.visitors - a.visitors || b.orders - a.orders);
+  return out;
+}

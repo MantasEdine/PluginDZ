@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   addDays,
   addMonths,
+  campaignPerformance,
   daySeries,
   monthStart,
   revenueBetween,
@@ -120,5 +121,27 @@ analyticsRouter.get(
         },
       },
     });
+  }),
+);
+
+analyticsRouter.get(
+  '/campaigns',
+  asyncHandler(async (_req, res) => {
+    const today = shopToday();
+    const start = addDays(today, -29); // 30 jours glissants
+
+    const rows = await campaignPerformance(start);
+    const totals = rows.reduce(
+      (acc, r) => {
+        acc.visitors += r.visitors;
+        acc.views += r.views;
+        acc.orders += r.orders;
+        acc.revenue += r.revenue;
+        return acc;
+      },
+      { visitors: 0, views: 0, orders: 0, revenue: 0 },
+    );
+
+    res.json({ data: { rows, totals, periodDays: 30 } });
   }),
 );
