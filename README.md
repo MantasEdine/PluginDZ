@@ -172,3 +172,5 @@ la vitrine.
 - Galerie multi-images par produit.
 - Export CSV des commandes au format Yalidine.
 - Grille de prix dégressive par palier de quantité.
+
+<!-- Railway deploy test: 2026-09-06T00:25Z -->
