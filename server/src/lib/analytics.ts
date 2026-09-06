@@ -142,8 +142,13 @@ export interface CampaignRow {
  * rapprochement est (campagne, source, medium) - les deux cotes sont normalises
  * identiquement, donc comparables.
  */
-export async function campaignPerformance(startDay: string): Promise<CampaignRow[]> {
-  const [visitRows, orderRows] = await Promise.all([
+export interface CampaignReport {
+  rows: CampaignRow[];
+  totals: { visitors: number; views: number; orders: number; revenue: number };
+}
+
+export async function campaignPerformance(startDay: string): Promise<CampaignReport> {
+  const [visitRows, orderRows, totalVisitorRows] = await Promise.all([
     prisma.$queryRaw<{ campaign: string; source: string; medium: string; visitors: bigint; views: bigint }[]>`
       SELECT campaign, source, medium,
              COUNT(DISTINCT visitor_id) AS visitors,
@@ -152,16 +157,25 @@ export async function campaignPerformance(startDay: string): Promise<CampaignRow
       WHERE campaign IS NOT NULL
         AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
       GROUP BY campaign, source, medium`,
+    // Commandes = demandes generees hors annulations ; CA = seulement confirme/expedie,
+    // pour rester coherent avec le tableau de bord Revenus (chiffre confirme).
     prisma.$queryRaw<{ campaign: string; source: string; medium: string; orders: bigint; revenue: bigint }[]>`
       SELECT utm_campaign AS campaign,
              COALESCE(utm_source, 'direct') AS source,
              COALESCE(utm_medium, 'none') AS medium,
-             COUNT(*) AS orders,
-             COALESCE(SUM(total), 0) AS revenue
+             COUNT(*) FILTER (WHERE status::text <> 'annule') AS orders,
+             COALESCE(SUM(total) FILTER (WHERE status::text IN ('confirme', 'expedie')), 0) AS revenue
       FROM orders
       WHERE utm_campaign IS NOT NULL
         AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
       GROUP BY utm_campaign, utm_source, utm_medium`,
+    // Visiteurs uniques toutes campagnes confondues : non sommable depuis les groupes
+    // (un visiteur touche parfois plusieurs campagnes), donc compte a part pour le total.
+    prisma.$queryRaw<{ visitors: bigint }[]>`
+      SELECT COUNT(DISTINCT visitor_id) AS visitors
+      FROM visits
+      WHERE campaign IS NOT NULL
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date`,
   ]);
 
   const key = (c: string, s: string, m: string) => `${c} ${s} ${m}`;
@@ -201,11 +215,21 @@ export async function campaignPerformance(startDay: string): Promise<CampaignRow
     }
   }
 
-  const out = [...rows.values()];
+  // Ecarte les lignes entierement vides (ex. campagne dont toutes les commandes ont ete
+  // annulees et sans visite sur la periode).
+  const out = [...rows.values()].filter((r) => r.visitors > 0 || r.orders > 0 || r.views > 0);
   for (const r of out) {
     r.conversion = r.visitors > 0 ? Math.round((r.orders / r.visitors) * 1000) / 10 : 0;
   }
   // Tri : d'abord par nombre de visiteurs, puis par commandes.
   out.sort((a, b) => b.visitors - a.visitors || b.orders - a.orders);
-  return out;
+
+  const totals = {
+    visitors: Number(totalVisitorRows[0]?.visitors ?? 0),
+    views: out.reduce((sum, r) => sum + r.views, 0),
+    orders: out.reduce((sum, r) => sum + r.orders, 0),
+    revenue: out.reduce((sum, r) => sum + r.revenue, 0),
+  };
+
+  return { rows: out, totals };
 }

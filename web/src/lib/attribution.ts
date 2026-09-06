@@ -6,6 +6,10 @@
  * « dernier contact » : chaque nouvelle campagne remplace la précédente. Cette étiquette
  * accompagne ensuite chaque page vue et la commande, pour alimenter le tableau
  * « Performance des campagnes » du back-office. Aucune donnée personnelle.
+ *
+ * IMPORTANT — garder synchronisé avec server/src/lib/attribution.ts : le rapprochement
+ * visites/commandes se fait sur les chaînes exactes (source, medium, campaign). Toute
+ * évolution du nettoyage ou des règles de dérivation doit être répliquée des deux côtés.
  */
 
 const COOKIE = 'plugin_attrib';
@@ -62,9 +66,14 @@ function writeCookie(attrib: Attribution): void {
 }
 
 /**
- * Met à jour l'attribution à partir de l'URL courante. Une campagne/source explicite
- * (UTM ou gclid/fbclid) remplace l'ancienne (dernier contact). En l'absence de tout
- * signal et de cookie existant, on fixe une première attribution depuis le référent.
+ * Met à jour l'attribution à partir de l'URL courante (règle du dernier contact).
+ *
+ * Un marquage UTM délibéré (utm_source ou utm_campaign) remplace l'attribution
+ * précédente en entier. En revanche, un simple identifiant de clic au retour (gclid /
+ * fbclid seul, sans UTM) ne doit PAS écraser une campagne déjà mémorisée : sinon un
+ * visiteur revenu via un lien Facebook « nu » perdrait la campagne qui l'avait amené,
+ * et la commande ne serait plus rattachée à cette campagne. Ces identifiants de clic
+ * ne servent donc qu'à fixer une toute première attribution.
  */
 export function rememberAttributionFromUrl(): void {
   const params = new URLSearchParams(window.location.search);
@@ -73,9 +82,10 @@ export function rememberAttributionFromUrl(): void {
   const utmCampaign = cleanTag(params.get('utm_campaign'));
   const gclid = params.get('gclid');
   const fbclid = params.get('fbclid');
-  const hasTouch = Boolean(utmSource || utmMedium || utmCampaign || gclid || fbclid);
+  const deliberateTag = Boolean(utmSource || utmCampaign); // marquage UTM volontaire
+  const existing = readCookie();
 
-  if (hasTouch) {
+  if (deliberateTag) {
     let source = utmSource;
     if (!source) source = gclid ? 'google' : fbclid ? 'facebook' : externalHost(document.referrer) ?? 'direct';
     let medium = utmMedium;
@@ -84,9 +94,18 @@ export function rememberAttributionFromUrl(): void {
     return;
   }
 
-  if (!readCookie()) {
-    const host = externalHost(document.referrer);
-    writeCookie({ source: host ?? 'direct', medium: 'none', campaign: null });
+  // Pas de marquage UTM : on ne fixe une attribution que s'il n'en existe aucune.
+  if (!existing) {
+    if (gclid || fbclid) {
+      writeCookie({
+        source: gclid ? 'google' : 'facebook',
+        medium: gclid ? 'cpc' : 'social',
+        campaign: null,
+      });
+    } else {
+      const host = externalHost(document.referrer);
+      writeCookie({ source: host ?? 'direct', medium: 'none', campaign: null });
+    }
   }
 }
 

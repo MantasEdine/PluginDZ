@@ -130,17 +130,9 @@ analyticsRouter.get(
     const today = shopToday();
     const start = addDays(today, -29); // 30 jours glissants
 
-    const rows = await campaignPerformance(start);
-    const totals = rows.reduce(
-      (acc, r) => {
-        acc.visitors += r.visitors;
-        acc.views += r.views;
-        acc.orders += r.orders;
-        acc.revenue += r.revenue;
-        return acc;
-      },
-      { visitors: 0, views: 0, orders: 0, revenue: 0 },
-    );
+    // Les totaux sont calculés dans le helper : le total « visiteurs » est un décompte
+    // distinct global (non sommable depuis les lignes par campagne).
+    const { rows, totals } = await campaignPerformance(start);
 
     res.json({ data: { rows, totals, periodDays: 30 } });
   }),
