@@ -8,6 +8,7 @@ import { orderReference } from '../lib/format';
 import { variantLabel } from '../lib/serialize';
 import { sendOrderNotification } from '../lib/mailer';
 import { orderRateLimiter, lookupRateLimiter } from '../middleware/rate-limit';
+import { deriveAttribution } from '../lib/attribution';
 
 export const ordersRouter = Router();
 
@@ -35,6 +36,14 @@ const createOrderSchema = z.object({
   customerAddress: z.string().trim().min(5, 'Adresse trop courte').max(400),
   customerNote: z.string().trim().max(500).optional(),
   items: z.array(orderItemSchema).min(1, 'Le panier est vide').max(50),
+  // Attribution publicitaire transmise par le front (cookie dernier contact). Facultative.
+  attribution: z
+    .object({
+      source: z.string().trim().max(120).optional().nullable(),
+      medium: z.string().trim().max(120).optional().nullable(),
+      campaign: z.string().trim().max(120).optional().nullable(),
+    })
+    .optional(),
 });
 
 /**
@@ -116,6 +125,12 @@ ordersRouter.post(
 
     const total = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
+    // Attribution : d'où vient ce client ? Normalisée comme les visites pour rester comparable.
+    const attribution = payload.attribution
+      ? deriveAttribution(payload.attribution)
+      : null;
+    const hasCampaign = attribution && (attribution.campaign || attribution.source !== 'direct');
+
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
         data: {
@@ -126,6 +141,9 @@ ordersRouter.post(
           customerAddress: payload.customerAddress,
           customerNote: payload.customerNote ?? null,
           total,
+          utmSource: hasCampaign ? attribution!.source : null,
+          utmMedium: hasCampaign ? attribution!.medium : null,
+          utmCampaign: hasCampaign ? attribution!.campaign : null,
           items: { create: lines },
         },
       });

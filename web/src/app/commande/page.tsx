@@ -7,6 +7,7 @@ import { PUBLIC_API_URL, type Wilaya } from '@/lib/api';
 import { formatDa } from '@/lib/format';
 import { useCart } from '@/components/CartProvider';
 import { useI18n } from '@/components/LocaleProvider';
+import { readAttribution } from '@/lib/attribution';
 
 export default function CheckoutPage() {
     const { locale, t } = useI18n();
@@ -53,6 +54,8 @@ export default function CheckoutPage() {
                             ? { packId: line.packId, quantity: line.quantity }
                             : { variantId: line.variantId, quantity: line.quantity },
                     ),
+                    // Étiquette de campagne (dernier contact) : rattache la commande à la pub.
+                    attribution: readAttribution(),
                 }),
             });
 

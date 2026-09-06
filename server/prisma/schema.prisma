@@ -145,6 +145,11 @@ model Order {
   stockReleased   Boolean     @default(false) @map("stock_released")
   /// Total en DA, figé au moment de la commande
   total           Int
+  /// Attribution publicitaire (dernier contact) : d'où vient le client qui a commandé.
+  /// Permet le tableau « Performance des campagnes ». Null si trafic non attribué.
+  utmSource       String?     @map("utm_source")
+  utmMedium       String?     @map("utm_medium")
+  utmCampaign     String?     @map("utm_campaign")
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -152,6 +157,7 @@ model Order {
 
   @@index([status])
   @@index([createdAt])
+  @@index([utmCampaign])
   @@map("orders")
 }
 
@@ -187,11 +193,16 @@ model Visit {
   referrer  String?
   /// Source de trafic normalisée : utm_source, sinon domaine référent, sinon « direct ».
   source    String   @default("direct")
+  /// Type de trafic : utm_medium (« cpc », « social », « email »...), sinon « none ».
+  medium    String   @default("none")
+  /// Nom de campagne (utm_campaign) choisi dans la régie publicitaire. Null hors campagne.
+  campaign  String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([createdAt])
   @@index([visitorId])
   @@index([source])
+  @@index([campaign])
   @@map("visits")
 }
 

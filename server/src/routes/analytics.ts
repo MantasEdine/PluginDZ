@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   addDays,
   addMonths,
+  campaignPerformance,
   daySeries,
   monthStart,
   revenueBetween,
@@ -120,5 +121,19 @@ analyticsRouter.get(
         },
       },
     });
+  }),
+);
+
+analyticsRouter.get(
+  '/campaigns',
+  asyncHandler(async (_req, res) => {
+    const today = shopToday();
+    const start = addDays(today, -29); // 30 jours glissants
+
+    // Les totaux sont calculés dans le helper : le total « visiteurs » est un décompte
+    // distinct global (non sommable depuis les lignes par campagne).
+    const { rows, totals } = await campaignPerformance(start);
+
+    res.json({ data: { rows, totals, periodDays: 30 } });
   }),
 );
