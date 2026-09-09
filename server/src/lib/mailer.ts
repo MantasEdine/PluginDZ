@@ -140,3 +140,52 @@ export async function sendOrderNotification(order: OrderMailPayload): Promise<vo
     console.error("[mail] échec de l'envoi de la notification de commande", error);
   }
 }
+
+
+export interface MailDiagnostic {
+  resendConfigured: boolean;
+  from: string;
+  to: string;
+  status?: number;
+  ok?: boolean;
+  detail?: string;
+}
+
+/**
+ * Diagnostic d'envoi : envoie un email de test via Resend et renvoie la réponse brute
+ * (statut + message). Sert au bouton « Tester l'email » du back-office pour voir
+ * immédiatement pourquoi un envoi échoue (clé absente, destinataire refusé, domaine
+ * non vérifié...). Ne révèle jamais la clé API.
+ */
+export async function sendTestEmail(): Promise<MailDiagnostic> {
+  const base: MailDiagnostic = {
+    resendConfigured: Boolean(env.mail.resendApiKey),
+    from: env.mail.from,
+    to: env.mail.notificationTo,
+  };
+
+  if (!env.mail.resendApiKey) {
+    return { ...base, ok: false, detail: "RESEND_API_KEY absente : aucun email n'est envoyé (mode journal)." };
+  }
+
+  try {
+    const response = await fetch(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.mail.resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.mail.from,
+        to: [env.mail.notificationTo],
+        subject: 'Test Plugin.dz — configuration des emails',
+        text: 'Ceci est un email de test envoyé depuis le back-office Plugin.dz. Si vous le recevez, les notifications de commande fonctionnent.',
+        html: '<p>Ceci est un email de test envoyé depuis le back-office <strong>Plugin.dz</strong>.</p><p>Si vous le recevez, les notifications de commande fonctionnent.</p>',
+      }),
+    });
+    const detail = (await response.text().catch(() => '')).slice(0, 400);
+    return { ...base, ok: response.ok, status: response.status, detail };
+  } catch (error) {
+    return { ...base, ok: false, detail: `Erreur réseau : ${String(error).slice(0, 200)}` };
+  }
+}

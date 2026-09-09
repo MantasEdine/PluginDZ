@@ -8,11 +8,23 @@ import { asyncHandler } from '../middleware/error';
 import { requireAdmin, requireOwner } from '../middleware/auth';
 import { uniqueSlug } from '../lib/slug';
 import { packInclude, productInclude, serializePack, serializeProduct } from '../lib/serialize';
+import { sendTestEmail } from '../lib/mailer';
 
 export const adminRouter = Router();
 
 // Tout le back-office est protégé.
 adminRouter.use(requireAdmin);
+
+/* ------------------------------------------------------------------ diagnostic email */
+
+/** Envoie un email de test et renvoie la réponse de Resend, pour diagnostiquer la config. */
+adminRouter.get(
+  '/mail-test',
+  asyncHandler(async (_req, res) => {
+    const result = await sendTestEmail();
+    res.json({ data: result });
+  }),
+);
 
 /* ------------------------------------------------------------------ tableau de bord */
 
