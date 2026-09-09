@@ -1,21 +1,18 @@
-import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from '../env';
 import { formatDa } from './format';
 
-let transporter: Transporter | null = null;
+/**
+ * Notification de commande par email, via Resend (https://resend.com).
+ *
+ * Resend est une API HTTP : on envoie une simple requête POST avec la clé API, et
+ * Resend se charge de livrer l'email. Pas de serveur SMTP à gérer. Si aucune clé
+ * n'est configurée (développement local), l'email est simplement journalisé.
+ *
+ * Un échec d'envoi ne doit JAMAIS faire échouer l'enregistrement de la commande :
+ * tout est encapsulé et les erreurs sont seulement journalisées.
+ */
 
-function getTransporter(): Transporter | null {
-  if (!env.mail.host) return null;
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.mail.host,
-      port: env.mail.port,
-      secure: env.mail.secure,
-      auth: env.mail.user ? { user: env.mail.user, pass: env.mail.password } : undefined,
-    });
-  }
-  return transporter;
-}
+const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
 export interface OrderMailLine {
   label: string;
@@ -107,26 +104,38 @@ function buildText(order: OrderMailPayload): string {
 
 /**
  * Notifie le propriétaire d'une nouvelle commande.
- * Sans SMTP configuré (dev), le message est simplement journalisé — l'échec d'un
- * envoi ne doit jamais faire échouer l'enregistrement de la commande.
+ * Avec une clé Resend configurée : envoi réel. Sinon : journalisation (dev).
  */
 export async function sendOrderNotification(order: OrderMailPayload): Promise<void> {
-  const mailer = getTransporter();
   const subject = `Nouvelle commande ${order.reference} — ${order.customerWilaya} — ${formatDa(order.total)}`;
 
-  if (!mailer) {
+  if (!env.mail.resendApiKey) {
+    // Pas de clé : on n'envoie rien, on journalise (utile en développement local).
     console.info(`[mail:console] ${subject}\n${buildText(order)}`);
     return;
   }
 
   try {
-    await mailer.sendMail({
-      from: env.mail.from,
-      to: env.mail.notificationTo,
-      subject,
-      text: buildText(order),
-      html: buildHtml(order),
+    const response = await fetch(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.mail.resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: env.mail.from,
+        to: [env.mail.notificationTo],
+        subject,
+        html: buildHtml(order),
+        text: buildText(order),
+      }),
     });
+
+    if (!response.ok) {
+      // Resend renvoie un JSON d'erreur (domaine non vérifié, clé invalide, etc.).
+      const detail = await response.text().catch(() => '');
+      console.error(`[mail] Resend a refusé l'envoi (${response.status}) : ${detail}`);
+    }
   } catch (error) {
     console.error("[mail] échec de l'envoi de la notification de commande", error);
   }

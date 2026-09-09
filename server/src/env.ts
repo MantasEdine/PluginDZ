@@ -18,12 +18,6 @@ function int(name: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function bool(name: string, fallback: boolean): boolean {
-  const raw = process.env[name];
-  if (raw === undefined || raw === '') return fallback;
-  return raw === 'true' || raw === '1';
-}
-
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 
 export const env = {
@@ -47,13 +41,15 @@ export const env = {
   },
 
   mail: {
-    host: process.env.SMTP_HOST ?? '',
-    port: int('SMTP_PORT', 587),
-    secure: bool('SMTP_SECURE', false),
-    user: process.env.SMTP_USER ?? '',
-    password: process.env.SMTP_PASSWORD ?? '',
-    from: process.env.MAIL_FROM ?? 'Plugin.dz <no-reply@plugin.dz>',
+    // Expéditeur affiché. Le domaine doit être vérifié dans Resend ; par défaut on
+    // utilise l'expéditeur de test partagé de Resend (onboarding@resend.dev), qui ne
+    // peut écrire qu'à l'adresse du compte Resend — parfait pour démarrer.
+    from: process.env.MAIL_FROM ?? 'Plugin.dz <onboarding@resend.dev>',
+    // Destinataire des notifications de commande (mettez votre email).
     notificationTo: process.env.ORDER_NOTIFICATION_EMAIL ?? 'commandes@plugin.dz',
+    // Clé API Resend (https://resend.com/api-keys). À définir dans les variables
+    // d'environnement de l'hébergeur, jamais en clair dans le code.
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
   },
 
   uploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR ?? 'uploads'),
