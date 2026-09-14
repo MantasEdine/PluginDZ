@@ -28,7 +28,7 @@ export function Footer() {
           <p className="mb-2 font-semibold">{t('common.contact')}</p>
           <ul className="space-y-1.5 text-white/70">
             <li>contact@plugin.dz</li>
-            <li>Yalidine — 58 wilayas</li>
+            <li>Yalidine — 69 wilayas</li>
           </ul>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { CartProvider } from '@/components/CartProvider';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { VisitTracker } from '@/components/VisitTracker';
+import { TrustBar } from '@/components/TrustBar';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -18,7 +19,7 @@ const SITE_META: Record<Locale, {
         title: 'Plugin.dz — Chargeurs en gros et demi-gros en Algérie',
         template: '%s | Plugin.dz',
         description:
-            'Chargeurs téléphone, montre, caméra et vélo électrique en gros et demi-gros. Prix revendeur, livraison Yalidine dans les 58 wilayas.',
+            'Chargeurs téléphone, montre, caméra et vélo électrique en gros et demi-gros. Prix revendeur, livraison Yalidine dans les 69 wilayas.',
         keywords: ['chargeur', 'gros', 'demi-gros', 'Algérie', 'Hoco', 'Yalidine', 'plugin.dz'],
         ogLocale: 'fr_DZ',
     },
@@ -26,7 +27,7 @@ const SITE_META: Record<Locale, {
         title: 'Plugin.dz — شواحن بالجملة ونصف الجملة في الجزائر',
         template: '%s | Plugin.dz',
         description:
-            'شواحن الهاتف والساعة والكاميرا والدراجة الكهربائية بالجملة ونصف الجملة. أسعار التجار والتوصيل إلى 58 ولاية عبر Yalidine.',
+            'شواحن الهاتف والساعة والكاميرا والدراجة الكهربائية بالجملة ونصف الجملة. أسعار التجار والتوصيل إلى 69 ولاية عبر Yalidine.',
         keywords: ['شاحن', 'شواحن', 'بالجملة', 'الجزائر', 'Hoco', 'Yalidine', 'plugin.dz'],
         ogLocale: 'ar_DZ',
     },
@@ -61,6 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <LocaleProvider locale={locale}>
                     <CartProvider>
                         <VisitTracker />
+                        <TrustBar />
                         <Header />
                         <main className="flex-1">{children}</main>
                         <Footer />
