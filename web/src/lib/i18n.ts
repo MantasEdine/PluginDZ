@@ -29,8 +29,8 @@ const MESSAGES = {
     "شواحن بالجملة لمحلك",
   ],
   "home.heroText": [
-    "Chargeurs téléphone, montre, caméra et vélo électrique. Prix revendeur, livraison dans les 58 wilayas via Yalidine.",
-    "شواحن الهاتف والساعة والكاميرا والدراجة الكهربائية. أسعار الجملة والتوصيل إلى 58 ولاية عبر Yalidine.",
+    "Chargeurs téléphone, montre, caméra et vélo électrique. Prix revendeur, livraison dans les 69 wilayas via Yalidine.",
+    "شواحن الهاتف والساعة والكاميرا والدراجة الكهربائية. أسعار الجملة والتوصيل إلى 69 ولاية عبر Yalidine.",
   ],
   "home.heroCta": ["Voir les packs", "اكتشف الباقات"],
   "home.heroCta2": ["Parcourir le catalogue", "تصفح الكتالوج"],
@@ -55,7 +55,7 @@ const MESSAGES = {
     "Des tarifs dégressifs pensés pour les boutiques.",
     "أسعار تنازلية مدروسة للمحلات.",
   ],
-  "home.arg2Title": ["58 wilayas", "58 ولاية"],
+  "home.arg2Title": ["69 wilayas", "69 ولاية"],
   "home.arg2Text": [
     "Livraison partout en Algérie via Yalidine.",
     "التوصيل لكل الجزائر عبر Yalidine.",
@@ -175,6 +175,11 @@ const MESSAGES = {
   "status.confirme": ["Confirmée", "مؤكد"],
   "status.expedie": ["Expédiée", "تم الشحن"],
   "status.annule": ["Annulée", "ملغى"],
+
+  "trust.original": ["Produits 100% originaux", "منتجات أصلية 100%"],
+  "trust.delivery": ["Livraison 69 wilayas", "التوصيل إلى 69 ولاية"],
+  "trust.cod": ["Paiement à la livraison", "الدفع عند الاستلام"],
+  "trust.support": ["Support direct", "دعم مباشر"],
 
   "common.loading": ["Chargement...", "جاري التحميل..."],
   "common.error": ["Une erreur est survenue.", "حدث خطأ."],
