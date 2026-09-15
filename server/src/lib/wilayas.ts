@@ -1,5 +1,8 @@
 /**
- * Les 58 wilayas algériennes, dans l'ordre officiel des codes.
+ * Les 69 wilayas algériennes, dans l'ordre officiel des codes.
+ *  - 1 à 48  : découpage historique ;
+ *  - 49 à 58 : wilayas déléguées promues par la loi 19-12 ;
+ *  - 59 à 69 : créées par la loi 26-06 d'avril 2026.
  * Utilisées par le formulaire de commande et par la préparation des colis Yalidine.
  */
 export const WILAYAS: readonly { code: number; name: string }[] = [
@@ -61,6 +64,18 @@ export const WILAYAS: readonly { code: number; name: string }[] = [
   { code: 56, name: 'Djanet' },
   { code: 57, name: "El M'Ghair" },
   { code: 58, name: 'El Meniaa' },
+  // Loi 26-06 (avril 2026)
+  { code: 59, name: 'Aflou' },
+  { code: 60, name: 'Barika' },
+  { code: 61, name: 'El Kantara' },
+  { code: 62, name: 'Bir El Ater' },
+  { code: 63, name: 'El Aricha' },
+  { code: 64, name: 'Ksar Chellala' },
+  { code: 65, name: 'Aïn Oussara' },
+  { code: 66, name: 'Messaad' },
+  { code: 67, name: 'Ksar El Boukhari' },
+  { code: 68, name: 'Bou Saâda' },
+  { code: 69, name: 'El Abiodh Sidi Cheikh' },
 ];
 
 const WILAYA_NAMES = new Set(WILAYAS.map((w) => w.name));

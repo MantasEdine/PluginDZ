@@ -49,7 +49,9 @@ export function ProductPurchase({ product }: { product: Product }) {
               key={value}
               type="button"
               onClick={() => choose(key, value)}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+              // Choix de déclinaison : c'est une étape d'achat, la cible doit être
+              // confortable au doigt (44 px de haut sur téléphone).
+              className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-3.5 py-1.5 text-sm font-medium transition sm:min-h-0 ${
                 variant![key] === value
                   ? 'border-navy-700 bg-navy-700 text-white'
                   : 'border-slate-300 bg-white text-navy-800 hover:border-plug-500'
