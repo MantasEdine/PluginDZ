@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/seo';
 import { api } from '@/lib/api';
 import { getTranslations } from '@/lib/locale-server';
 import { PackCard, SectionTitle } from '@/components/Cards';
 
 export const metadata: Metadata = {
-  title: 'Packs de gros',
-  description: 'Packs de chargeurs en gros pour revendeurs : 10, 12, 20 unités. Prix dégressifs et livraison Yalidine.',
+  title: 'Packs de gros pour revendeurs — Algérie',
+  description:
+    'Packs en gros pour boutiques et revendeurs : 10, 12, 20 unités. Prix dégressifs, '
+    + 'livraison 69 wilayas, paiement à la livraison.',
+  alternates: { canonical: `${SITE_URL}/packs` },
 };
 export const revalidate = 60;
 

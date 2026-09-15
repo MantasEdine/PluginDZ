@@ -5,6 +5,8 @@ import { api } from '@/lib/api';
 import { getTranslations } from '@/lib/locale-server';
 import { ProductCard, SectionTitle } from '@/components/Cards';
 import { ProductPurchase } from '@/components/ProductPurchase';
+import { JsonLd } from '@/components/JsonLd';
+import { breadcrumbJsonLd, metaDescription, productJsonLd, SITE_URL } from '@/lib/seo';
 
 export const revalidate = 60;
 
@@ -15,12 +17,24 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const result = await api.product(slug);
   if (!result?.data) return { title: 'Produit' };
   const product = result.data;
+  // La description reprend les mots réellement tapés par les acheteurs :
+  // produit + marque + « Algérie » + prix + livraison.
+  const price = product.minPrice !== null ? `${product.minPrice} DA` : null;
+  const fallback = [
+    `${product.name} — ${product.brand.name}`,
+    price ? `${price} en Algérie` : 'en Algérie',
+    'Livraison 69 wilayas, paiement à la livraison.',
+  ].join('. ');
+
   return {
-    title: product.name,
-    description: product.description.slice(0, 160) || `${product.name} — chargeur ${product.brand.name}.`,
+    title: `${product.name} — ${product.brand.name} | Prix Algérie`,
+    description: metaDescription(product.description, fallback),
+    alternates: { canonical: `${SITE_URL}/produits/${product.slug}` },
     openGraph: {
+      type: 'website',
       title: product.name,
-      description: product.description.slice(0, 160),
+      description: metaDescription(product.description, fallback),
+      url: `${SITE_URL}/produits/${product.slug}`,
       images: product.imageUrl ? [product.imageUrl] : undefined,
     },
   };
@@ -38,6 +52,14 @@ export default async function ProductPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
+      <JsonLd data={productJsonLd(product)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Accueil', path: '/' },
+          { name: 'Produits', path: '/produits' },
+          { name: product.name, path: `/produits/${product.slug}` },
+        ])}
+      />
       <nav className="mb-6 flex flex-wrap gap-1.5 text-sm text-slate-500">
         <Link href="/" className="hover:text-navy-700">{t('nav.home')}</Link>
         <span>/</span>

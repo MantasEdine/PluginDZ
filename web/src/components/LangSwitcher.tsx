@@ -28,7 +28,9 @@ export function LangSwitcher() {
           type="button"
           onClick={() => choose(item)}
           aria-pressed={item === locale}
-          className={`rounded-md px-2.5 py-1 text-xs font-bold transition ${
+          // `min-h-11 min-w-11` : 44 px de zone tactile sur téléphone (recommandation
+          // iOS/Android). On revient à une pastille compacte dès `sm`.
+          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 py-1 text-xs font-bold transition sm:min-h-0 sm:min-w-0 ${
             item === locale ? 'bg-white text-navy-700' : 'text-white/80 hover:text-white'
           }`}
         >
