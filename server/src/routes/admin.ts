@@ -7,6 +7,7 @@ import { HttpError } from '../lib/http-error';
 import { asyncHandler } from '../middleware/error';
 import { requireAdmin, requireOwner } from '../middleware/auth';
 import { normalizePhone } from '../lib/phone';
+import { releasesStock, REVENUE_STATUSES } from '../lib/order-status';
 import { uniqueSlug } from '../lib/slug';
 import { packInclude, productInclude, serializePack, serializeProduct } from '../lib/serialize';
 import { sendTestEmail } from '../lib/mailer';
@@ -32,17 +33,25 @@ adminRouter.get(
 adminRouter.get(
   '/stats',
   asyncHandler(async (_req, res) => {
-    const [newOrders, totalOrders, products, packs, lowStock, revenue] = await Promise.all([
-      prisma.order.count({ where: { status: OrderStatus.nouveau } }),
-      prisma.order.count(),
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.pack.count({ where: { isActive: true } }),
-      prisma.productVariant.count({ where: { stock: { lte: 5 } } }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        where: { status: { in: [OrderStatus.confirme, OrderStatus.expedie] } },
-      }),
-    ]);
+    const [newOrders, totalOrders, products, packs, lowStock, revenue, delivered, returned, shipped] =
+      await Promise.all([
+        prisma.order.count({ where: { status: OrderStatus.nouveau } }),
+        prisma.order.count(),
+        prisma.product.count({ where: { isActive: true } }),
+        prisma.pack.count({ where: { isActive: true } }),
+        prisma.productVariant.count({ where: { stock: { lte: 5 } } }),
+        prisma.order.aggregate({
+          _sum: { total: true },
+          where: { status: { in: [...REVENUE_STATUSES] } },
+        }),
+        // Encaissé pour de vrai : seules les commandes livrées ont été payées.
+        prisma.order.aggregate({ _sum: { total: true }, where: { status: OrderStatus.livre } }),
+        prisma.order.count({ where: { status: OrderStatus.retourne } }),
+        // Base du taux de retour : tout ce qui est effectivement parti chez le client.
+        prisma.order.count({
+          where: { status: { in: [OrderStatus.expedie, OrderStatus.livre, OrderStatus.retourne] } },
+        }),
+      ]);
 
     res.json({
       data: {
@@ -52,6 +61,11 @@ adminRouter.get(
         packs,
         lowStock,
         confirmedRevenue: revenue._sum.total ?? 0,
+        deliveredRevenue: delivered._sum.total ?? 0,
+        returnedOrders: returned,
+        // Part des colis expédiés qui reviennent : l'indicateur qui décide si une
+        // campagne est rentable ou non en paiement à la livraison.
+        returnRate: shipped > 0 ? Math.round((returned / shipped) * 100) : 0,
       },
     });
   }),
@@ -656,12 +670,13 @@ adminRouter.patch(
     if (!existing) throw HttpError.notFound('Commande introuvable');
 
     // Le stock réservé suit l'état de la commande via le drapeau `stockReleased` :
-    //  - passer à « annulée » rend le stock (une seule fois) ;
+    //  - passer à « annulée » ou « retournée » rend le stock (une seule fois) ;
     //  - revenir à un état actif le re-réserve (une seule fois).
     // Sans ce garde-fou idempotent, une bascule annulée→confirmée→annulée gonflait
-    // le stock à chaque cycle.
-    const shouldRelease = status === OrderStatus.annule && !existing.stockReleased;
-    const shouldReserve = status !== OrderStatus.annule && existing.stockReleased;
+    // le stock à chaque cycle. Un colis refusé à la livraison revient physiquement
+    // au dépôt : il doit repartir en rayon exactement comme une annulation.
+    const shouldRelease = releasesStock(status) && !existing.stockReleased;
+    const shouldReserve = !releasesStock(status) && existing.stockReleased;
 
     if (shouldRelease || shouldReserve) {
       const delta = shouldRelease ? 1 : -1; // +1 = rendre au rayon, -1 = re-réserver

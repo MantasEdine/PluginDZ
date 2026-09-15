@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin';
 import { formatDa } from '@/lib/format';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { AdLinkBuilder } from '@/components/admin/AdLinkBuilder';
 
 interface VariantOption {
   id: number; productName: string; brand: string; label: string; price: number; stock: number;
 }
 interface PackRow {
-  id: number; name: string; price: number; oldPrice: number | null; description: string;
+  id: number; name: string; slug: string; price: number; oldPrice: number | null; description: string;
   imageUrl: string | null; stock: number; isFeatured: boolean; isActive: boolean;
   totalUnits: number; unitValue: number; savings: number;
   items: { id: number; variantId: number; quantity: number; label: string }[];
@@ -275,6 +276,9 @@ function PackForm({ pack, variants, onClose, onSaved }: {
           )}
         </p>
       </div>
+
+      {/* Disponible seulement sur un pack déjà enregistré : le lien a besoin du slug. */}
+      {pack && <AdLinkBuilder kind="pack" slug={pack.slug} />}
 
       {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 

@@ -137,6 +137,75 @@ section('Suivi de commande');
   await ctx.close();
 }
 
+section('Contact et réseaux');
+{
+  const { ctx, page } = await openPage('fr');
+  await page.goto(`${WEB}/`, { waitUntil: 'networkidle' });
+
+  const wa = await page.evaluate(() => {
+    const all = [...document.querySelectorAll('a[href*="wa.me"]')];
+    // Le pied de page a aussi un lien WhatsApp : le bouton flottant est le seul
+    // en position fixed.
+    const floating = all.find((el) => getComputedStyle(el).position === 'fixed');
+    const r = floating?.getBoundingClientRect();
+    return {
+      total: all.length,
+      href: floating?.getAttribute('href') ?? '',
+      w: r ? Math.round(r.width) : 0,
+      h: r ? Math.round(r.height) : 0,
+      onScreen: r ? r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1 : false,
+      social: ['facebook.com', 'instagram.com', 'tiktok.com']
+        .filter((host) => document.querySelector(`a[href*="${host}"]`)).length,
+      sameAs: (() => {
+        const tag = [...document.querySelectorAll('script[type="application/ld+json"]')]
+          .map((n) => JSON.parse(n.textContent))
+          .find((d) => d['@type'] === 'OnlineStore');
+        return Array.isArray(tag?.sameAs) ? tag.sameAs.length : 0;
+      })(),
+    };
+  });
+
+  ok('Le bouton WhatsApp flottant est présent', wa.w > 0);
+  ok('Il pointe vers le bon numéro', /wa\.me\/213549982823/.test(wa.href), wa.href);
+  ok('Sa cible tactile fait au moins 44 px', wa.w >= 44 && wa.h >= 44, `${wa.w}x${wa.h}`);
+  ok('Il reste dans l\'écran', wa.onScreen);
+  ok('Le pied de page propose aussi WhatsApp', wa.total >= 2, `${wa.total} lien(s)`);
+  ok('Les trois réseaux sont liés', wa.social === 3, `${wa.social}/3`);
+  ok('Les réseaux sont déclarés dans les données structurées', wa.sameAs === 3, `sameAs: ${wa.sameAs}`);
+
+  // Le bouton s'adresse aux clients : dans le back-office il recouvrirait les
+  // formulaires de gestion.
+  await page.goto(`${WEB}/admin/login`, { waitUntil: 'networkidle' });
+  const inAdmin = await page.evaluate(() =>
+    [...document.querySelectorAll('a[href*="wa.me"]')]
+      .some((el) => getComputedStyle(el).position === 'fixed'));
+  ok('Le bouton flottant est absent du back-office', !inAdmin);
+  await ctx.close();
+}
+
+section('Lien publicitaire vers le panier');
+{
+  const { ctx, page } = await openPage('fr');
+  // Reproduit exactement ce que le back-office met dans le presse-papiers.
+  const link = `${WEB}/panier?produit=${productSlug}&qty=3`
+    + '&utm_source=tiktok&utm_medium=social&utm_campaign=test-e2e';
+  await page.goto(link, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(1200);
+
+  const qty = page.locator('input[type="number"]').first();
+  ok('Le lien pub dépose l\'article au panier', await qty.isVisible().catch(() => false));
+  ok('Le lien pub applique la quantité', (await qty.inputValue().catch(() => '')) === '3');
+  ok('Le lien pub nettoie l\'URL', !/utm_|produit=/.test(page.url()), page.url());
+
+  const attrib = await page.evaluate(() => {
+    const row = document.cookie.split('; ').find((r) => r.startsWith('plugin_attrib='));
+    return row ? JSON.parse(decodeURIComponent(row.slice('plugin_attrib='.length))) : null;
+  });
+  ok('La campagne du lien est mémorisée pour la commande',
+    attrib?.source === 'tiktok' && attrib?.campaign === 'test-e2e', JSON.stringify(attrib));
+  await ctx.close();
+}
+
 section('Langue et RTL');
 {
   const { ctx, page } = await openPage('ar');
@@ -202,6 +271,68 @@ section('Intégrité de l\'API');
     formats.map((f, i) => `${f} → ${codes[i]}`).join(', '));
   ok('Un autre numéro reste refusé malgré la normalisation',
     (await fetch(`${API}/api/orders/lookup?reference=${intlRef}&phone=0661445567`)).status === 404);
+}
+
+/*
+ * Cycle de vie « livrée / retournée ». Nécessite un compte du back-office :
+ * exporter ADMIN_EMAIL et ADMIN_PASSWORD pour activer cette section, sinon elle
+ * est signalée comme ignorée plutôt que de faire échouer la suite.
+ */
+section('Livraison et retour (back-office)');
+if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+  console.log('  SKIP  ADMIN_EMAIL / ADMIN_PASSWORD absents — section ignorée');
+} else {
+  const auth = await (await fetch(`${API}/api/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD }),
+  })).json();
+  const H = { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.data?.token}` };
+
+  const stockOf = async (id) => {
+    const p = await (await fetch(`${API}/api/products/${productSlug}`)).json();
+    return p.data.variants.find((v) => v.id === id).stock;
+  };
+  const setStatus = (id, status) =>
+    fetch(`${API}/api/admin/orders/${id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ status }) });
+  const stats = async () => (await (await fetch(`${API}/api/admin/stats`, { headers: H })).json()).data;
+
+  const products = await (await fetch(`${API}/api/products?perPage=1`)).json();
+  const v = products.data[0].variants.find((x) => x.stock > 2);
+  const before = await stockOf(v.id);
+
+  const created = await (await fetch(`${API}/api/orders`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      customerName: 'E2E Cycle Colis', customerPhone: '0661778899', customerWilaya: 'Alger',
+      customerAddress: 'Rue du cycle, Alger', items: [{ variantId: v.id, quantity: 2 }],
+    }),
+  })).json();
+  const list = await (await fetch(`${API}/api/admin/orders?search=${created.data.reference}`, { headers: H })).json();
+  const orderId = list.data[0].id;
+
+  await setStatus(orderId, 'expedie');
+  ok('Un colis expédié garde le stock réservé', (await stockOf(v.id)) === before - 2);
+
+  const s0 = await stats();
+  await setStatus(orderId, 'livre');
+  const s1 = await stats();
+  ok('Une commande livrée entre dans l\'encaissé',
+    s1.deliveredRevenue === s0.deliveredRevenue + created.data.total);
+  ok('Une commande livrée ne revient pas en stock', (await stockOf(v.id)) === before - 2);
+
+  await setStatus(orderId, 'retourne');
+  ok('Un colis retourné revient en stock', (await stockOf(v.id)) === before,
+    `${before - 2} -> ${await stockOf(v.id)}, attendu ${before}`);
+  const s2 = await stats();
+  ok('Un colis retourné sort de l\'encaissé', s2.deliveredRevenue === s0.deliveredRevenue);
+  ok('Le taux de retour est exposé', typeof s2.returnRate === 'number');
+
+  // Le piège classique : basculer entre états ne doit jamais créer de stock.
+  for (let i = 0; i < 3; i++) { await setStatus(orderId, 'livre'); await setStatus(orderId, 'retourne'); }
+  ok('Les bascules livré/retourné ne gonflent pas le stock', (await stockOf(v.id)) === before,
+    `stock final ${await stockOf(v.id)}, attendu ${before}`);
+
+  ok('Un statut inconnu est rejeté', (await setStatus(orderId, 'statut_invente')).status === 400);
 }
 
 await browser.close();

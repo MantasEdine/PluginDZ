@@ -8,6 +8,7 @@ import { formatDa } from '@/lib/format';
 interface Stats {
   newOrders: number; totalOrders: number; products: number;
   packs: number; lowStock: number; confirmedRevenue: number;
+  deliveredRevenue: number; returnedOrders: number; returnRate: number;
 }
 
 interface MailDiagnostic {
@@ -46,7 +47,27 @@ export default function AdminDashboard() {
     ? [
         { label: 'Nouvelles commandes', value: stats.newOrders, href: '/admin/commandes?status=nouveau', accent: true },
         { label: 'Commandes au total', value: stats.totalOrders, href: '/admin/commandes' },
-        { label: 'Chiffre confirmé', value: formatDa(stats.confirmedRevenue), href: '/admin/revenus' },
+        // « Encaissé » ne compte que les commandes livrées : en paiement à la
+        // livraison, c'est le seul argent réellement entré en caisse.
+        {
+          label: 'Encaissé (livré)',
+          value: formatDa(stats.deliveredRevenue),
+          href: '/admin/commandes?status=livre',
+          hint: 'Argent réellement perçu',
+        },
+        {
+          label: 'Chiffre engagé',
+          value: formatDa(stats.confirmedRevenue),
+          href: '/admin/revenus',
+          hint: 'Confirmé + expédié + livré',
+        },
+        {
+          label: 'Taux de retour',
+          value: `${stats.returnRate} %`,
+          href: '/admin/commandes?status=retourne',
+          hint: `${stats.returnedOrders} colis refusé${stats.returnedOrders > 1 ? 's' : ''} sur les envois`,
+          warn: stats.returnRate >= 20,
+        },
         { label: 'Produits actifs', value: stats.products, href: '/admin/produits' },
         { label: 'Packs actifs', value: stats.packs, href: '/admin/packs' },
         { label: 'Déclinaisons à réappro. (≤5)', value: stats.lowStock, href: '/admin/produits' },
@@ -65,11 +86,18 @@ export default function AdminDashboard() {
               key={tile.label}
               href={tile.href}
               className={`rounded-xl border bg-white p-5 transition hover:shadow ${
-                tile.accent && stats.newOrders > 0 ? 'border-plug-500' : 'border-slate-200'
+                tile.warn
+                  ? 'border-red-300'
+                  : tile.accent && stats.newOrders > 0
+                    ? 'border-plug-500'
+                    : 'border-slate-200'
               }`}
             >
               <p className="text-sm text-slate-500">{tile.label}</p>
-              <p className="mt-1 text-2xl font-extrabold text-navy-700">{tile.value}</p>
+              <p className={`mt-1 text-2xl font-extrabold ${tile.warn ? 'text-red-600' : 'text-navy-700'}`}>
+                {tile.value}
+              </p>
+              {tile.hint && <p className="mt-0.5 text-xs text-slate-400">{tile.hint}</p>}
             </Link>
           ))}
         </div>

@@ -122,10 +122,21 @@ model PackItem {
   @@map("pack_items")
 }
 
+/// Cycle de vie d'une commande payée à la livraison.
+///  nouveau  -> reçue, pas encore appelée ;
+///  confirme -> le client a confirmé au téléphone ;
+///  expedie  -> remise au transporteur ;
+///  livre    -> colis remis ET argent encaissé — le seul chiffre réellement gagné ;
+///  retourne -> le client a refusé le colis à la livraison : marchandise revenue
+///              en stock, argent jamais encaissé (à distinguer d'une annulation,
+///              qui intervient avant expédition et ne coûte pas de transport) ;
+///  annule   -> annulée avant expédition.
 enum OrderStatus {
   nouveau
   confirme
   expedie
+  livre
+  retourne
   annule
 }
 
@@ -135,7 +146,7 @@ model Order {
   reference       String      @unique
   customerName    String      @map("customer_name")
   customerPhone   String      @map("customer_phone")
-  /// Wilaya algérienne (parmi les 58) — indispensable pour Yalidine
+  /// Wilaya algérienne (parmi les 69) — indispensable pour Yalidine
   customerWilaya  String      @map("customer_wilaya")
   customerAddress String      @map("customer_address")
   customerNote    String?     @map("customer_note")

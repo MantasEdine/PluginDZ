@@ -55,10 +55,10 @@ const MESSAGES = {
     "Des tarifs dégressifs pensés pour les boutiques.",
     "أسعار تنازلية مدروسة للمحلات.",
   ],
-  "home.arg2Title": ["69 wilayas", "69 ولاية"],
+  "home.arg2Title": ["Livraison gratuite", "التوصيل مجاني"],
   "home.arg2Text": [
-    "Livraison partout en Algérie via Yalidine.",
-    "التوصيل لكل الجزائر عبر Yalidine.",
+    "Offerte dans les 69 wilayas, via Yalidine.",
+    "مجانا إلى 69 ولاية، عبر Yalidine.",
   ],
   "home.arg3Title": ["Paiement à la livraison", "الدفع عند الاستلام"],
   "home.arg3Text": [
@@ -178,10 +178,19 @@ const MESSAGES = {
   "status.nouveau": ["Nouvelle", "جديد"],
   "status.confirme": ["Confirmée", "مؤكد"],
   "status.expedie": ["Expédiée", "تم الشحن"],
+  "status.livre": ["Livrée", "تم التسليم"],
+  "status.retourne": ["Retournée", "تم الإرجاع"],
   "status.annule": ["Annulée", "ملغى"],
 
+  "whatsapp.aria": ["Nous écrire sur WhatsApp", "راسلنا على واتساب"],
+  "whatsapp.prefill": [
+    "Bonjour Plugin.dz, j'ai une question sur un produit.",
+    "مرحبا Plugin.dz، عندي سؤال حول منتج.",
+  ],
+  "social.follow": ["Suivez-nous", "تابعونا"],
+
   "trust.original": ["Produits 100% originaux", "منتجات أصلية 100%"],
-  "trust.delivery": ["Livraison 69 wilayas", "التوصيل إلى 69 ولاية"],
+  "trust.delivery": ["Livraison gratuite — 69 wilayas", "توصيل مجاني — 69 ولاية"],
   "trust.cod": ["Paiement à la livraison", "الدفع عند الاستلام"],
   "trust.support": ["Support direct", "دعم مباشر"],
 

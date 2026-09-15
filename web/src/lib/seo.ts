@@ -1,3 +1,4 @@
+import { SOCIAL_LINKS, WHATSAPP_NUMBER } from './contact';
 import type { Pack, Product } from './api';
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://plugin-dz.com').replace(/\/$/, '');
@@ -102,6 +103,11 @@ export function organizationJsonLd(): Record<string, unknown> {
     logo: `${SITE_URL}/icon.png`,
     image: `${SITE_URL}/opengraph-image.jpg`,
     email: 'contact@plugin.dz',
+    telephone: `+${WHATSAPP_NUMBER}`,
+    // `sameAs` rattache le site à ses comptes : c'est ainsi que Google relie la
+    // boutique à ses pages Facebook, Instagram et TikTok plutôt que de les traiter
+    // comme trois entités sans rapport.
+    sameAs: SOCIAL_LINKS.map((social) => social.href),
     areaServed: { '@type': 'Country', name: 'Algérie' },
     currenciesAccepted: CURRENCY,
     paymentAccepted: 'Paiement à la livraison',
