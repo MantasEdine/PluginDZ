@@ -80,9 +80,13 @@ export function PackCard({ pack }: { pack: Pack }) {
     <Link href={`/packs/${pack.slug}`} className="card group flex flex-col overflow-hidden">
       <div className="relative">
         <Thumb src={pack.imageUrl ?? pack.items[0]?.imageUrl ?? null} alt={pack.name} />
-        <span className="badge absolute start-2 top-2 bg-navy-700 text-white">
-          {pack.totalUnits} {t('pack.units')}
-        </span>
+        {/* Le compteur n'a de sens qu'à partir de 2 : « 1 unité » sur un pack laisse
+            croire qu'on achète une seule pièce, alors que le nom annonce le contenu. */}
+        {pack.totalUnits > 1 && (
+          <span className="badge absolute start-2 top-2 bg-navy-700 text-white">
+            {pack.totalUnits} {t('pack.units')}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 border-t border-slate-100 p-3">
         <h3 className="line-clamp-2 text-sm font-semibold text-navy-900 group-hover:text-navy-700">
@@ -109,13 +113,17 @@ export function PackCard({ pack }: { pack: Pack }) {
   );
 }
 
-export function SectionTitle({ title, subtitle, href, linkLabel }: {
-  title: string; subtitle?: string; href?: string; linkLabel?: string;
+export function SectionTitle({ title, subtitle, href, linkLabel, as = 'h2' }: {
+  title: string; subtitle?: string; href?: string; linkLabel?: string; as?: 'h1' | 'h2';
 }) {
+  // Quand ce titre est le titre principal de la page (et non une section parmi
+  // d'autres), il doit être un <h1> : les moteurs s'en servent pour comprendre
+  // de quoi parle la page, et une page sans <h1> se référence moins bien.
+  const Heading = as;
   return (
     <div className="mb-5 flex items-end justify-between gap-4">
       <div>
-        <h2 className="text-2xl font-extrabold text-navy-900">{title}</h2>
+        <Heading className="text-2xl font-extrabold text-navy-900">{title}</Heading>
         {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
       </div>
       {href && (

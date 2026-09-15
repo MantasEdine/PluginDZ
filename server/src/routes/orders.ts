@@ -9,11 +9,9 @@ import { variantLabel } from '../lib/serialize';
 import { sendOrderNotification } from '../lib/mailer';
 import { orderRateLimiter, lookupRateLimiter } from '../middleware/rate-limit';
 import { deriveAttribution } from '../lib/attribution';
+import { ALGERIAN_PHONE, normalizePhone, samePhone } from '../lib/phone';
 
 export const ordersRouter = Router();
-
-/** Numéro algérien : 05/06/07 + 8 chiffres, avec ou sans indicatif +213. */
-const phonePattern = /^(?:\+213|00213|0)(?:5|6|7)\d{8}$/;
 
 const orderItemSchema = z
   .object({
@@ -27,11 +25,13 @@ const orderItemSchema = z
 
 const createOrderSchema = z.object({
   customerName: z.string().trim().min(3, 'Nom trop court').max(120),
+  // Enregistré sous sa forme canonique « 0XXXXXXXXX » : le client peut saisir
+  // « +213... » ou « 06 61 ... », la commande reste retrouvable dans le suivi.
   customerPhone: z
     .string()
     .trim()
-    .transform((value) => value.replace(/[\s.-]/g, ''))
-    .refine((value) => phonePattern.test(value), 'Numéro de téléphone algérien invalide'),
+    .transform(normalizePhone)
+    .refine((value) => ALGERIAN_PHONE.test(value), 'Numéro de téléphone algérien invalide'),
   customerWilaya: z.string().trim().refine(isValidWilaya, 'Wilaya invalide'),
   customerAddress: z.string().trim().min(5, 'Adresse trop courte').max(400),
   customerNote: z.string().trim().max(500).optional(),
@@ -226,14 +226,15 @@ ordersRouter.get(
       phone: z.string().trim().min(6),
     });
     const { reference, phone } = schema.parse(req.query);
-    const normalizedPhone = phone.replace(/[\s.-]/g, '');
 
     const order = await prisma.order.findUnique({
       where: { reference: reference.toUpperCase() },
       include: { items: true },
     });
 
-    if (!order || order.customerPhone !== normalizedPhone) {
+    // Comparaison sur la forme canonique des deux côtés : les commandes déjà en base
+    // avec un indicatif international restent retrouvables au format national.
+    if (!order || !samePhone(order.customerPhone, phone)) {
       throw HttpError.notFound('Aucune commande ne correspond à ces informations');
     }
 

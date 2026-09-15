@@ -113,7 +113,7 @@ function CartPageInner() {
                 <h1 className="text-2xl font-extrabold text-navy-900">{t('cart.title')}</h1>
                 {status === 'error' && (
                     <p className="mt-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-                        Ce produit n&apos;est plus disponible.
+                        {t('cart.unavailable')}
                     </p>
                 )}
                 <p className="mt-3 text-slate-500">{t('cart.empty')}</p>
@@ -128,7 +128,7 @@ function CartPageInner() {
 
             {status === 'error' && (
                 <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-                    Ce produit n&apos;est plus disponible.
+                    {t('cart.unavailable')}
                 </p>
             )}
 

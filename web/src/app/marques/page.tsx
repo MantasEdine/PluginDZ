@@ -13,7 +13,7 @@ export default async function BrandsPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
-      <SectionTitle title={t('nav.brands')} subtitle={t('home.brandsSub')} />
+      <SectionTitle as="h1" title={t('nav.brands')} subtitle={t('home.brandsSub')} />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {(brands?.data ?? []).map((brand) => (
           <Link key={brand.id} href={`/marques/${brand.slug}`} className="card p-6 text-center">

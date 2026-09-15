@@ -6,6 +6,7 @@ import { prisma } from '../prisma';
 import { HttpError } from '../lib/http-error';
 import { asyncHandler } from '../middleware/error';
 import { requireAdmin, requireOwner } from '../middleware/auth';
+import { normalizePhone } from '../lib/phone';
 import { uniqueSlug } from '../lib/slug';
 import { packInclude, productInclude, serializePack, serializeProduct } from '../lib/serialize';
 import { sendTestEmail } from '../lib/mailer';
@@ -601,7 +602,11 @@ adminRouter.get(
             OR: [
               { reference: { contains: query.search, mode: 'insensitive' } },
               { customerName: { contains: query.search, mode: 'insensitive' } },
+              // Le numéro est stocké au format national : on cherche aussi la forme
+              // canonique de la saisie, pour qu'un « +213 661... » collé depuis
+              // WhatsApp retrouve bien la commande.
               { customerPhone: { contains: query.search } },
+              { customerPhone: { contains: normalizePhone(query.search) } },
               { customerWilaya: { contains: query.search, mode: 'insensitive' } },
             ],
           }

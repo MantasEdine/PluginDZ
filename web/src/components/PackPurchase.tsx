@@ -23,10 +23,14 @@ export function PackPurchase({ pack }: { pack: Pack }) {
       </div>
 
       <dl className="grid grid-cols-2 gap-3 rounded-xl bg-navy-50 p-4 text-sm">
-        <div>
-          <dt className="text-slate-500">{t('pack.units')}</dt>
-          <dd className="font-bold text-navy-800">{pack.totalUnits}</dd>
-        </div>
+        {/* Même règle que sur la vignette : afficher « 1 unité » ferait croire que le
+            pack ne contient qu'une seule pièce. En dessous de 2, on n'affiche rien. */}
+        {pack.totalUnits > 1 && (
+          <div>
+            <dt className="text-slate-500">{t('pack.units')}</dt>
+            <dd className="font-bold text-navy-800">{pack.totalUnits}</dd>
+          </div>
+        )}
         <div>
           <dt className="text-slate-500">{t('pack.unitValue')}</dt>
           <dd className="font-bold text-navy-800">{formatDa(pack.unitValue, locale)}</dd>
