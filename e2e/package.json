@@ -1,0 +1,12 @@
+{
+  "name": "@plugin-dz/e2e",
+  "private": true,
+  "type": "module",
+  "description": "Parcours acheteur de bout en bout (Playwright) + contrôles d'intégrité de l'API.",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
