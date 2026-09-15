@@ -21,9 +21,11 @@ function Thumb({ src, alt }: { src: string | null; alt: string }) {
 
 export function StockBadge({ stock }: { stock: number }) {
   const { t } = useI18n();
-  if (stock <= 0) return <span className="badge bg-slate-100 text-slate-500">{t('product.outOfStock')}</span>;
-  if (stock <= 10) return <span className="badge bg-amber-100 text-amber-700">{t('product.lowStock')}</span>;
-  return <span className="badge bg-emerald-100 text-emerald-700">{t('product.inStock')}</span>;
+  // `shrink-0` + `whitespace-nowrap` : la pastille garde sa forme même dans une carte étroite.
+  const base = 'badge shrink-0 whitespace-nowrap';
+  if (stock <= 0) return <span className={`${base} bg-slate-100 text-slate-500`}>{t('product.outOfStock')}</span>;
+  if (stock <= 10) return <span className={`${base} bg-amber-100 text-amber-700`}>{t('product.lowStock')}</span>;
+  return <span className={`${base} bg-emerald-100 text-emerald-700`}>{t('product.inStock')}</span>;
 }
 
 export function ProductCard({ product }: { product: Product }) {
@@ -48,21 +50,25 @@ export function ProductCard({ product }: { product: Product }) {
         <h3 className="line-clamp-2 text-sm font-semibold text-navy-900 group-hover:text-navy-700">
           {product.name}
         </h3>
-        <div className="mt-auto flex items-end justify-between pt-2">
-          <div>
+        {/* Sur une carte étroite (2 colonnes sur téléphone), prix et pastille de stock
+            ne tiennent pas sur une ligne : ils passent l'un sous l'autre. */}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-2 gap-y-1 pt-2">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
             {oldPrice && (
-              <span className="me-2 text-xs text-slate-400 line-through">{formatDa(oldPrice, locale)}</span>
+              <span className="text-xs text-slate-400 line-through">{formatDa(oldPrice, locale)}</span>
             )}
-            <span className="text-lg font-extrabold text-navy-700">
+            <span className="whitespace-nowrap text-base font-extrabold text-navy-700 sm:text-lg">
               {product.minPrice !== null ? formatDa(product.minPrice, locale) : '—'}
             </span>
             {product.maxPrice !== null && product.maxPrice !== product.minPrice && (
-              <span className="ms-1 text-xs text-slate-500">+</span>
+              <span className="text-xs text-slate-500">+</span>
             )}
           </div>
           <StockBadge stock={product.totalStock} />
         </div>
-        {product.subType && <span className="text-xs text-slate-500">{t('product.type')} : {product.subType}</span>}
+        {product.subType && (
+          <span className="truncate text-xs text-slate-500">{t('product.type')} : {product.subType}</span>
+        )}
       </div>
     </Link>
   );
@@ -83,17 +89,21 @@ export function PackCard({ pack }: { pack: Pack }) {
           {pack.name}
         </h3>
         <div className="mt-auto pt-2">
-          {pack.oldPrice && pack.oldPrice > pack.price && (
-            <span className="me-2 text-xs text-slate-400 line-through">{formatDa(pack.oldPrice, locale)}</span>
-          )}
-          <span className="text-lg font-extrabold text-navy-700">{formatDa(pack.price, locale)}</span>
+          <div className="flex flex-wrap items-baseline gap-x-1.5">
+            {pack.oldPrice && pack.oldPrice > pack.price && (
+              <span className="text-xs text-slate-400 line-through">{formatDa(pack.oldPrice, locale)}</span>
+            )}
+            <span className="whitespace-nowrap text-base font-extrabold text-navy-700 sm:text-lg">
+              {formatDa(pack.price, locale)}
+            </span>
+          </div>
           {pack.savings > 0 && (
-            <p className="text-xs font-semibold text-emerald-600">
+            <p className="truncate text-xs font-semibold text-emerald-600">
               {t('pack.savings')} {formatDa(pack.savings, locale)}
             </p>
           )}
         </div>
-        <StockBadge stock={pack.stock} />
+        <div className="flex"><StockBadge stock={pack.stock} /></div>
       </div>
     </Link>
   );
