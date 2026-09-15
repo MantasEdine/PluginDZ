@@ -44,7 +44,7 @@ export default async function HomePage() {
                 href={`/produits?type=${type.slug}`}
                 className="rounded-xl border border-white/15 bg-white/5 p-4 transition hover:bg-white/10"
               >
-                <p className="font-semibold">{type.name}</p>
+                <p className="break-words font-semibold">{type.name}</p>
                 <p className="mt-1 text-sm text-white/60">
                   {type.productCount} {t('brand.products')}
                 </p>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin';
 import { formatDa } from '@/lib/format';
+import { SkeletonTiles } from '@/components/Skeleton';
 
 interface Stats {
   newOrders: number; totalOrders: number; products: number;
@@ -78,7 +79,7 @@ export default function AdminDashboard() {
     <div>
       <h1 className="mb-5 text-2xl font-extrabold text-navy-900">Tableau de bord</h1>
       {!stats ? (
-        <p className="text-slate-500">Chargement...</p>
+        <SkeletonTiles count={8} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((tile) => (

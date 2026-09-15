@@ -82,8 +82,13 @@ export default async function PackPage({ params }: Params) {
         <h2 className="mb-4 text-xl font-bold text-navy-900">{t('pack.contains')}</h2>
         <ul className="divide-y divide-slate-100">
           {pack.items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-4 py-3">
-              <Link href={`/produits/${item.productSlug}`} className="text-sm font-medium text-navy-800 hover:text-plug-500">
+            <li key={item.id} className="flex items-center justify-between gap-4 py-1.5">
+              {/* Le lien occupe toute la hauteur de la ligne : on vise la ligne,
+                  pas les quelques pixels du texte. */}
+              <Link
+                href={`/produits/${item.productSlug}`}
+                className="inline-flex min-h-11 items-center text-sm font-medium text-navy-800 hover:text-plug-500"
+              >
                 {item.label}
               </Link>
               <span className="shrink-0 text-sm text-slate-500">

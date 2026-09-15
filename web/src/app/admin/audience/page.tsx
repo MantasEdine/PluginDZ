@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin';
+import { SkeletonLine, SkeletonTiles } from '@/components/Skeleton';
 import { BarChart, HBarList } from '@/components/admin/Charts';
 import { formatDa } from '@/lib/format';
 import { StatTile } from '@/components/admin/StatTile';
@@ -58,7 +59,16 @@ export default function AudienceDashboard() {
   }, []);
 
   if (error) return <p className="text-red-600">Impossible de charger les statistiques.</p>;
-  if (!data) return <p className="text-slate-500">Chargement...</p>;
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <SkeletonLine className="h-7 w-48" />
+        <SkeletonTiles count={3} />
+        <SkeletonLine className="h-64 w-full" />
+        <SkeletonLine className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const { summary } = data;
   const nf = (v: number) => v.toLocaleString('fr-FR');
@@ -142,7 +152,9 @@ export default function AudienceDashboard() {
         </div>
 
         {!campaigns ? (
-          <p className="py-6 text-center text-sm text-slate-400">Chargement...</p>
+          <div className="space-y-2 py-2" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, i) => <SkeletonLine key={i} className="h-9 w-full" />)}
+          </div>
         ) : campaigns.rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-400">
             Aucune campagne détectée. Ajoutez des paramètres UTM à vos liens publicitaires pour les voir ici.

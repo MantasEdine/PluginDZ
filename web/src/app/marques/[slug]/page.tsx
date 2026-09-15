@@ -40,9 +40,11 @@ export default async function BrandPage({ params }: Params) {
           <div className="mt-4 flex flex-wrap gap-2">
             {brand.data.chargerTypes.map((type) => (
               <div key={type.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                {/* Ces liens sont la navigation principale de la page : ils doivent
+                    offrir une cible confortable au pouce, pas une ligne de texte. */}
                 <Link
                   href={`/produits?brand=${slug}&type=${type.slug}`}
-                  className="font-semibold text-navy-700 hover:text-plug-500"
+                  className="inline-flex min-h-11 items-center font-semibold text-navy-700 hover:text-plug-500 sm:min-h-0"
                 >
                   {type.name} <span className="text-xs text-slate-400">({type.productCount})</span>
                 </Link>
@@ -52,7 +54,7 @@ export default async function BrandPage({ params }: Params) {
                       <Link
                         key={subType}
                         href={`/produits?brand=${slug}&type=${type.slug}&subType=${encodeURIComponent(subType)}`}
-                        className="badge bg-navy-50 text-navy-700 hover:bg-navy-100"
+                        className="badge inline-flex min-h-11 items-center bg-navy-50 text-navy-700 hover:bg-navy-100 sm:min-h-0"
                       >
                         {subType}
                       </Link>

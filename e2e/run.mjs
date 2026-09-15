@@ -23,6 +23,29 @@ const ok = (name, pass, detail = '') => {
 };
 const section = (t) => console.log(`\n=== ${t} ===`);
 
+/**
+ * Attend que le lien publicitaire ait réellement déposé sa ligne dans le panier.
+ * Un délai fixe suffit sur une machine au repos et cède dès qu'elle est chargée :
+ * on attend donc la quantité attendue, pas une durée.
+ */
+async function waitForCartQuantity(page, expected, timeout = 15000) {
+  const field = page.locator('input[type="number"]').first();
+  try {
+    await field.waitFor({ state: 'visible', timeout });
+    await page.waitForFunction(
+      (want) => {
+        const input = document.querySelector('input[type="number"]');
+        return input instanceof HTMLInputElement && input.value === String(want);
+      },
+      expected,
+      { timeout },
+    );
+  } catch {
+    /* l'assertion appelante rapportera la valeur réellement lue */
+  }
+  return field.inputValue().catch(() => '');
+}
+
 const browser = await chromium.launch(launchOpts);
 
 /** Contexte navigateur avec la langue choisie et collecte des erreurs JS. */
@@ -34,6 +57,25 @@ async function openPage(lang = 'fr', viewport = { width: 1280, height: 900 }) {
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   return { ctx, page, errors };
+}
+
+/**
+ * Produit de référence pour les tests qui manipulent des quantités.
+ *
+ * Il est choisi via l'API, et non « le premier de la liste » : l'ordre d'affichage
+ * dépend des promotions et du stock, et un produit qui n'a qu'une unité en rayon
+ * fait échouer un ajout au panier de 3 — sans qu'il y ait le moindre défaut.
+ */
+const catalogue = await (await fetch(`${API}/api/products?perPage=50`)).json();
+const testProduct = (catalogue.data ?? [])
+  .map((p) => ({ slug: p.slug, variant: p.variants.find((v) => v.stock >= 5) }))
+  .find((p) => p.variant);
+
+if (!testProduct) {
+  console.log('\nImpossible de continuer : aucun produit n\'a de déclinaison avec au moins');
+  console.log('5 unités en stock. Relancer `npm run seed` dans server/ pour repartir au propre.');
+  await browser.close();
+  process.exit(1);
 }
 
 section('Catalogue');
@@ -48,12 +90,12 @@ section('Catalogue');
 }
 
 section('Fiche produit et panier');
-let productSlug = null;
 {
+  // Ici on suit délibérément la première carte du catalogue : c'est le chemin
+  // qu'emprunte un visiteur, et il doit fonctionner quel que soit le produit.
   const { ctx, page, errors } = await openPage();
   await page.goto(`${WEB}/produits`, { waitUntil: 'networkidle' });
   const first = page.locator('a.card').first();
-  productSlug = (await first.getAttribute('href')).split('/').pop();
   await first.click();
   await page.waitForLoadState('networkidle');
   ok('La fiche produit s\'ouvre', (await page.locator('h1').first().innerText()).length > 0);
@@ -75,16 +117,21 @@ let productSlug = null;
 section('Opérations panier');
 {
   const { ctx, page } = await openPage();
-  await page.goto(`${WEB}/panier?produit=${productSlug}&qty=2`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
-  const qty = page.locator('input[type="number"]').first();
-  ok('Le lien publicitaire fixe la quantité', (await qty.inputValue()) === '2');
+  await page.goto(`${WEB}/panier?produit=${testProduct.slug}&qty=2`, { waitUntil: 'networkidle' });
+  const lue = await waitForCartQuantity(page, 2);
+  ok('Le lien publicitaire fixe la quantité', lue === '2', `quantité lue : ${lue || '(champ absent)'}`);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
   ok('Le panier survit au rafraîchissement', (await page.locator('input[type="number"]').count()) > 0);
-  await page.getByRole('button', { name: /Retirer/i }).first().click();
-  await page.waitForTimeout(600);
-  ok('« Retirer » vide le panier', /panier est vide/i.test(await page.locator('body').innerText()));
+  const remove = page.getByRole('button', { name: /Retirer/i }).first();
+  const removable = await remove.isVisible().catch(() => false);
+  if (removable) {
+    await remove.click();
+    await page.waitForTimeout(600);
+  }
+  ok('« Retirer » vide le panier',
+    removable && /panier est vide/i.test(await page.locator('body').innerText()),
+    removable ? 'le panier n\'est pas vide après suppression' : 'aucune ligne à retirer');
   await ctx.close();
 }
 
@@ -92,7 +139,7 @@ section('Commande');
 let reference = null;
 {
   const { ctx, page } = await openPage();
-  await page.goto(`${WEB}/panier?produit=${productSlug}&qty=1`, { waitUntil: 'networkidle' });
+  await page.goto(`${WEB}/panier?produit=${testProduct.slug}&qty=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   await page.goto(`${WEB}/commande`, { waitUntil: 'networkidle' });
   ok('Le formulaire de commande s\'affiche', (await page.locator('#customerName').count()) > 0);
@@ -183,18 +230,56 @@ section('Contact et réseaux');
   await ctx.close();
 }
 
+section('Pastille boutique officielle');
+for (const [lang, attendu] of [['fr', 'Boutique officielle Plugin.dz'], ['ar', 'متجر Plugin.dz الرسمي']]) {
+  for (const width of [320, 1280]) {
+    const { ctx, page } = await openPage(lang, { width, height: 800 });
+    await page.goto(`${WEB}/`, { waitUntil: 'networkidle' });
+    const info = await page.evaluate(() => {
+      const header = document.querySelector('header');
+      // L'en-tête contient la version compacte ET la version large du logo :
+      // l'une des deux est masquée selon la largeur, on veut celle qui s'affiche.
+      const badge = [...header.querySelectorAll('svg[role="img"]')]
+        .filter((el) => el.querySelector('title'))
+        .find((el) => el.getBoundingClientRect().width > 0);
+      const r = badge?.getBoundingClientRect();
+      const cart = header.querySelector('a[href*="panier"]');
+      const c = cart?.getBoundingClientRect();
+      return {
+        w: r ? Math.round(r.width) : 0,
+        label: badge?.getAttribute('aria-label') ?? '',
+        inside: r ? r.right <= window.innerWidth + 1 && r.left >= -1 : false,
+        overlapsCart: r && c
+          ? !(r.right <= c.left || r.left >= c.right || r.bottom <= c.top || r.top >= c.bottom)
+          : false,
+        scrollW: document.documentElement.scrollWidth,
+        innerW: window.innerWidth,
+      };
+    });
+    ok(`La pastille s'affiche — ${lang} ${width}px`, info.w >= 14, `${info.w}px`);
+    ok(`Son libellé est traduit — ${lang} ${width}px`, info.label === attendu, info.label);
+    ok(`Elle reste dans l'écran — ${lang} ${width}px`, info.inside);
+    ok(`Elle ne recouvre pas le panier — ${lang} ${width}px`, !info.overlapsCart);
+    // Le risque réel de cette pastille : quelques pixels de plus dans un en-tête
+    // déjà serré sur un écran de 320 px.
+    ok(`L'en-tête ne déborde pas — ${lang} ${width}px`, info.scrollW <= info.innerW + 1,
+      `${info.scrollW} > ${info.innerW}`);
+    await ctx.close();
+  }
+}
+
 section('Lien publicitaire vers le panier');
 {
   const { ctx, page } = await openPage('fr');
   // Reproduit exactement ce que le back-office met dans le presse-papiers.
-  const link = `${WEB}/panier?produit=${productSlug}&qty=3`
+  const link = `${WEB}/panier?produit=${testProduct.slug}&qty=3`
     + '&utm_source=tiktok&utm_medium=social&utm_campaign=test-e2e';
   await page.goto(link, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
+  const lue = await waitForCartQuantity(page, 3);
 
   const qty = page.locator('input[type="number"]').first();
   ok('Le lien pub dépose l\'article au panier', await qty.isVisible().catch(() => false));
-  ok('Le lien pub applique la quantité', (await qty.inputValue().catch(() => '')) === '3');
+  ok('Le lien pub applique la quantité', lue === '3', `quantité lue : ${lue || '(champ absent)'}`);
   ok('Le lien pub nettoie l\'URL', !/utm_|produit=/.test(page.url()), page.url());
 
   const attrib = await page.evaluate(() => {
@@ -259,8 +344,11 @@ section('Intégrité de l\'API');
 
   // Un client écrit son numéro comme il veut : « +213 661... », « 00213... » ou
   // « 0661... » désignent la même ligne et doivent tous retrouver sa commande.
-  const intl = await (await post(payload({ customerPhone: '+213 661 44 55 66' }))).json();
+  const intlResponse = await post(payload({ customerPhone: '+213 661 44 55 66' }));
+  const intl = await intlResponse.json();
   const intlRef = intl.data?.reference;
+  ok('La commande de contrôle est bien créée', Boolean(intlRef),
+    `HTTP ${intlResponse.status} — ${JSON.stringify(intl).slice(0, 160)}`);
   const formats = ['+213661445566', '00213661445566', '0661445566', '0661 44 55 66'];
   const codes = [];
   for (const phone of formats) {
@@ -268,7 +356,7 @@ section('Intégrité de l\'API');
     codes.push(r.status);
   }
   ok('Le suivi accepte toutes les écritures du même numéro', codes.every((c) => c === 200),
-    formats.map((f, i) => `${f} → ${codes[i]}`).join(', '));
+    `référence ${intlRef ?? '(non créée)'} — ` + formats.map((f, i) => `${f} → ${codes[i]}`).join(', '));
   ok('Un autre numéro reste refusé malgré la normalisation',
     (await fetch(`${API}/api/orders/lookup?reference=${intlRef}&phone=0661445567`)).status === 404);
 }
@@ -288,17 +376,19 @@ if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
   })).json();
   const H = { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.data?.token}` };
 
+  // Le slug et la déclinaison viennent du même produit : les croiser donnait un
+  // `undefined` selon l'ordre du catalogue.
   const stockOf = async (id) => {
-    const p = await (await fetch(`${API}/api/products/${productSlug}`)).json();
-    return p.data.variants.find((v) => v.id === id).stock;
+    const p = await (await fetch(`${API}/api/products/${testProduct.slug}`)).json();
+    return p.data.variants.find((v) => v.id === id)?.stock ?? null;
   };
   const setStatus = (id, status) =>
     fetch(`${API}/api/admin/orders/${id}`, { method: 'PATCH', headers: H, body: JSON.stringify({ status }) });
   const stats = async () => (await (await fetch(`${API}/api/admin/stats`, { headers: H })).json()).data;
 
-  const products = await (await fetch(`${API}/api/products?perPage=1`)).json();
-  const v = products.data[0].variants.find((x) => x.stock > 2);
+  const v = testProduct.variant;
   const before = await stockOf(v.id);
+  ok('Le stock de départ est lisible', typeof before === 'number', `lu : ${before}`);
 
   const created = await (await fetch(`${API}/api/orders`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

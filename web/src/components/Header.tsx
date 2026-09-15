@@ -25,8 +25,8 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-3 sm:gap-4 sm:px-4">
         {/* Sur téléphone, seule l'icône : le mot-symbole ferait déborder l'en-tête. */}
         <Link href="/" className="shrink-0 rounded bg-white px-2 py-1.5 sm:px-2.5" aria-label="Plugin.dz">
-          <span className="flex sm:hidden"><Logo compact /></span>
-          <span className="hidden sm:flex"><Logo /></span>
+          <span className="flex sm:hidden"><Logo compact verified verifiedLabel={t('brand.official')} /></span>
+          <span className="hidden sm:flex"><Logo verified verifiedLabel={t('brand.official')} /></span>
         </Link>
 
         <nav className="hidden flex-1 items-center gap-1 lg:flex">

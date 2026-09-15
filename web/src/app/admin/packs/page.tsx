@@ -278,7 +278,7 @@ function PackForm({ pack, variants, onClose, onSaved }: {
       </div>
 
       {/* Disponible seulement sur un pack déjà enregistré : le lien a besoin du slug. */}
-      {pack && <AdLinkBuilder kind="pack" slug={pack.slug} />}
+      {pack && <AdLinkBuilder kind="pack" slug={pack.slug} stock={pack.stock} />}
 
       {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
