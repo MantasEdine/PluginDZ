@@ -187,6 +187,7 @@ const MESSAGES = {
     "Bonjour Plugin.dz, j'ai une question sur un produit.",
     "مرحبا Plugin.dz، عندي سؤال حول منتج.",
   ],
+  "brand.official": ["Boutique officielle Plugin.dz", "متجر Plugin.dz الرسمي"],
   "social.follow": ["Suivez-nous", "تابعونا"],
 
   "trust.original": ["Produits 100% originaux", "منتجات أصلية 100%"],

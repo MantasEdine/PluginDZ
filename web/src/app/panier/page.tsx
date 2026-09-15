@@ -7,6 +7,7 @@ import { formatDa } from '@/lib/format';
 import { PUBLIC_API_URL, type Pack, type Product } from '@/lib/api';
 import { useCart } from '@/components/CartProvider';
 import { useI18n } from '@/components/LocaleProvider';
+import { SkeletonLine, SkeletonRows } from '@/components/Skeleton';
 
 export default function CartPage() {
     return (
@@ -103,8 +104,25 @@ function CartPageInner() {
     const { lines, total, ready, setQuantity, remove } = useCart();
     const status = useAddFromUrl();
 
+    // Le panier vit dans le navigateur : tant qu'il n'est pas relu, on montre la
+    // forme des lignes plutôt qu'un mot. Sur une connexion lente, c'est la
+    // différence entre « ça charge » et « c'est cassé ».
     if (!ready || status === 'loading') {
-        return <div className="mx-auto max-w-4xl px-4 py-16 text-slate-500">{t('common.loading')}</div>;
+        return (
+            <div className="mx-auto max-w-5xl px-4 py-10">
+                <SkeletonLine className="mb-6 h-8 w-48" />
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                        <SkeletonRows rows={2} label={t('common.loading')} />
+                    </div>
+                    <aside className="h-fit space-y-3 rounded-xl border border-slate-200 bg-white p-5" aria-hidden="true">
+                        <SkeletonLine className="h-6 w-full" />
+                        <SkeletonLine className="h-11 w-full" />
+                        <SkeletonLine className="h-11 w-full" />
+                    </aside>
+                </div>
+            </div>
+        );
     }
 
     if (lines.length === 0) {

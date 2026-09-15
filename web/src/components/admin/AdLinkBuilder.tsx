@@ -41,17 +41,29 @@ export function AdLinkBuilder({
   kind,
   slug,
   variants,
+  stock,
 }: {
   kind: 'produit' | 'pack';
   slug: string;
-  /** Déclinaisons proposables (produits uniquement). */
-  variants?: { id: number; label: string }[];
+  /** Déclinaisons proposables (produits uniquement), avec leur stock. */
+  variants?: { id: number; label: string; stock: number }[];
+  /** Stock du pack (packs uniquement). */
+  stock?: number;
 }) {
   const [variantId, setVariantId] = useState<number | ''>('');
   const [qty, setQty] = useState(1);
   const [source, setSource] = useState('');
   const [campaign, setCampaign] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Stock de ce que le lien va réellement déposer dans le panier.
+  const rupture = useMemo(() => {
+    if (kind === 'pack') return (stock ?? 1) <= 0;
+    if (!variants || variants.length === 0) return false;
+    // « Laisser le site choisir » : il ne reste rien si toutes sont épuisées.
+    if (variantId === '') return variants.every((v) => v.stock <= 0);
+    return (variants.find((v) => v.id === variantId)?.stock ?? 0) <= 0;
+  }, [kind, stock, variants, variantId]);
 
   const url = useMemo(() => {
     // En production NEXT_PUBLIC_SITE_URL est défini ; sinon on retombe sur le
@@ -120,7 +132,9 @@ export function AdLinkBuilder({
             >
               <option value="">Laisser le site choisir</option>
               {variants.map((v) => (
-                <option key={v.id} value={v.id}>{v.label}</option>
+                <option key={v.id} value={v.id}>
+                  {v.label} — {v.stock > 0 ? `${v.stock} en stock` : 'RUPTURE'}
+                </option>
               ))}
             </select>
           </div>
@@ -157,6 +171,15 @@ export function AdLinkBuilder({
           />
         </div>
       </div>
+
+      {/* Un lien vers un article épuisé mène le client à un panier vide : l'argent
+          de la publicité est dépensé pour rien. Mieux vaut le voir avant de copier. */}
+      {rupture && (
+        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+          Article en rupture : ce lien mènerait à un panier vide. Réapprovisionnez avant
+          de le mettre dans une publicité.
+        </p>
+      )}
 
       {source && (
         <p className="mt-2 text-xs text-slate-500">
