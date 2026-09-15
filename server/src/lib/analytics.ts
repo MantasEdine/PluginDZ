@@ -1,4 +1,5 @@
 import { prisma } from '../prisma';
+import { LOST_STATUSES, REVENUE_STATUSES } from './order-status';
 
 /**
  * Fuseau de référence du commerce : l'Algérie est à UTC+1 toute l'année (pas d'heure
@@ -47,7 +48,18 @@ export function daySeries(start: string, end: string): string[] {
   return out;
 }
 
-const STATUS_PAID = ['confirme', 'expedie'];
+/**
+ * Statuts comptés dans le chiffre d'affaires, en texte pour les requêtes SQL.
+ * Dérivé de la règle métier unique (lib/order-status) : un nouveau statut n'a
+ * jamais à être recopié à la main ici.
+ *
+ * « livre » en fait partie — c'est même le seul encaissement certain. « retourne »
+ * en est exclu : un colis refusé à la livraison n'a jamais rapporté un dinar.
+ */
+const STATUS_PAID: string[] = REVENUE_STATUSES.map(String);
+
+/** Statuts qui annulent la vente (annulation avant envoi, ou refus à la livraison). */
+const LOST_STATUSES_SQL: string[] = LOST_STATUSES.map(String);
 
 /** Chiffre d'affaires confirmé (commandes confirmées/expédiées) par jour boutique. */
 export async function revenueByDay(startDay: string): Promise<Map<string, { revenue: number; orders: number }>> {
@@ -56,7 +68,7 @@ export async function revenueByDay(startDay: string): Promise<Map<string, { reve
            COALESCE(SUM(total), 0) AS revenue,
            COUNT(*) AS orders
     FROM orders
-    WHERE status::text IN ('confirme', 'expedie')
+    WHERE status::text = ANY(${STATUS_PAID})
       AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
     GROUP BY 1`;
   return new Map(rows.map((r) => [r.day, { revenue: Number(r.revenue), orders: Number(r.orders) }]));
@@ -69,7 +81,7 @@ export async function revenueByMonth(startDay: string): Promise<Map<string, { re
            COALESCE(SUM(total), 0) AS revenue,
            COUNT(*) AS orders
     FROM orders
-    WHERE status::text IN ('confirme', 'expedie')
+    WHERE status::text = ANY(${STATUS_PAID})
       AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
     GROUP BY 1`;
   return new Map(rows.map((r) => [r.month, { revenue: Number(r.revenue), orders: Number(r.orders) }]));
@@ -80,7 +92,7 @@ export async function revenueBetween(startDay: string, endDay: string): Promise<
   const rows = await prisma.$queryRaw<{ revenue: bigint; orders: bigint }[]>`
     SELECT COALESCE(SUM(total), 0) AS revenue, COUNT(*) AS orders
     FROM orders
-    WHERE status::text IN ('confirme', 'expedie')
+    WHERE status::text = ANY(${STATUS_PAID})
       AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
       AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date`;
   const r = rows[0];
@@ -157,14 +169,15 @@ export async function campaignPerformance(startDay: string): Promise<CampaignRep
       WHERE campaign IS NOT NULL
         AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
       GROUP BY campaign, source, medium`,
-    // Commandes = demandes generees hors annulations ; CA = seulement confirme/expedie,
-    // pour rester coherent avec le tableau de bord Revenus (chiffre confirme).
+    // Commandes = demandes reellement abouties ; CA = statuts encaisses ou en cours,
+    // pour rester coherent avec le tableau de bord Revenus. Annulees ET retournees
+    // sont exclues : juger une campagne sur des colis revenus la surestime.
     prisma.$queryRaw<{ campaign: string; source: string; medium: string; orders: bigint; revenue: bigint }[]>`
       SELECT utm_campaign AS campaign,
              COALESCE(utm_source, 'direct') AS source,
              COALESCE(utm_medium, 'none') AS medium,
-             COUNT(*) FILTER (WHERE status::text <> 'annule') AS orders,
-             COALESCE(SUM(total) FILTER (WHERE status::text IN ('confirme', 'expedie')), 0) AS revenue
+             COUNT(*) FILTER (WHERE status::text <> ALL(${LOST_STATUSES_SQL})) AS orders,
+             COALESCE(SUM(total) FILTER (WHERE status::text = ANY(${STATUS_PAID})), 0) AS revenue
       FROM orders
       WHERE utm_campaign IS NOT NULL
         AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date

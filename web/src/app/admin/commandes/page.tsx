@@ -4,19 +4,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin';
 import { formatDa } from '@/lib/format';
 
-const STATUSES = ['nouveau', 'confirme', 'expedie', 'annule'] as const;
+// Ordre du cycle de vie réel d'un colis payé à la livraison, du plus jeune au
+// dénouement. « Livrée » = argent encaissé ; « Retournée » = colis refusé à la
+// porte, marchandise revenue en rayon et transport perdu.
+const STATUSES = ['nouveau', 'confirme', 'expedie', 'livre', 'retourne', 'annule'] as const;
 type Status = (typeof STATUSES)[number];
 
 const LABELS: Record<Status, string> = {
   nouveau: 'Nouvelle',
   confirme: 'Confirmée',
   expedie: 'Expédiée',
+  livre: 'Livrée',
+  retourne: 'Retournée',
   annule: 'Annulée',
 };
 const COLORS: Record<Status, string> = {
   nouveau: 'bg-plug-500 text-white',
   confirme: 'bg-amber-100 text-amber-800',
-  expedie: 'bg-emerald-100 text-emerald-800',
+  expedie: 'bg-sky-100 text-sky-800',
+  // Seul statut en vert plein : c'est le seul où l'argent est réellement entré.
+  livre: 'bg-emerald-600 text-white',
+  retourne: 'bg-red-100 text-red-700',
   annule: 'bg-slate-200 text-slate-600',
 };
 

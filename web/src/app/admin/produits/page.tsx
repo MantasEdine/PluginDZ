@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { adminFetch } from '@/lib/admin';
 import { formatDa } from '@/lib/format';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { AdLinkBuilder } from '@/components/admin/AdLinkBuilder';
 
 interface Option { id: number; name: string }
 interface VariantForm {
@@ -283,6 +284,20 @@ function ProductForm({ product, brands, types, onClose, onSaved }: {
                     ))}
                 </div>
             </div>
+
+            {/* Le lien pub ne peut exister qu'une fois le produit enregistré : c'est
+                l'enregistrement qui lui donne son adresse (slug). */}
+            {product && (
+                <AdLinkBuilder
+                    kind="produit"
+                    slug={product.slug}
+                    variants={product.variants.map((v) => ({
+                        id: v.id,
+                        label: [v.color, v.power, v.plugType].filter(Boolean).join(' · ')
+                            || `Déclinaison ${v.id}`,
+                    }))}
+                />
+            )}
 
             {error && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 

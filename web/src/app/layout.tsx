@@ -8,6 +8,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { VisitTracker } from '@/components/VisitTracker';
 import { TrustBar } from '@/components/TrustBar';
+import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { JsonLd } from '@/components/JsonLd';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         <Header />
                         <main className="flex-1">{children}</main>
                         <Footer />
+                        <WhatsAppButton />
                     </CartProvider>
                 </LocaleProvider>
             </body>

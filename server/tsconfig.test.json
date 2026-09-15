@@ -1,0 +1,8 @@
+{
+  // Vérification de types des tests unitaires : mêmes règles que le code de
+  // production, mais rien n'est émis — les tests ne sont jamais livrés.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
