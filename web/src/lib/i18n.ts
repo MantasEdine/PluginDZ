@@ -129,6 +129,10 @@ const MESSAGES = {
   "cart.remove": ["Retirer", "حذف"],
   "cart.unitPrice": ["Prix unitaire", "سعر الوحدة"],
   "cart.pack": ["Pack", "باقة"],
+  "cart.unavailable": [
+    "Ce produit n'est plus disponible.",
+    "هذا المنتج لم يعد متوفرًا.",
+  ],
 
   "checkout.title": ["Finaliser la commande", "إتمام الطلب"],
   "checkout.intro": [

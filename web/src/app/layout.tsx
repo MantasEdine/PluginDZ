@@ -63,8 +63,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
     const locale = await getLocale();
 
+    // `data-scroll-behavior` : globals.css active le défilement fluide sur <html>.
+    // Next.js le neutralise pendant les changements de page — sans cet attribut il
+    // émet un avertissement en console et ce comportement disparaîtra à terme.
     return (
-        <html lang={locale} dir={dir(locale)}>
+        <html lang={locale} dir={dir(locale)} data-scroll-behavior="smooth">
             <body className="flex min-h-screen flex-col antialiased">
                 <LocaleProvider locale={locale}>
                     <CartProvider>

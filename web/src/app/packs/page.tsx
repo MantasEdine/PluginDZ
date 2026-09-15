@@ -21,6 +21,7 @@ export default async function PacksPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <SectionTitle
+        as="h1"
         title={t('pack.title')}
         subtitle={`${list.length} ${t('pack.available')}`}
       />

@@ -187,6 +187,21 @@ section('Intégrité de l\'API');
   ok('L\'API admin exige une authentification', (await fetch(`${API}/api/admin/orders`)).status === 401);
   ok('Suivi avec mauvais téléphone refusé',
     (await fetch(`${API}/api/orders/lookup?reference=PLG-000001&phone=0000000000`)).status === 404);
+
+  // Un client écrit son numéro comme il veut : « +213 661... », « 00213... » ou
+  // « 0661... » désignent la même ligne et doivent tous retrouver sa commande.
+  const intl = await (await post(payload({ customerPhone: '+213 661 44 55 66' }))).json();
+  const intlRef = intl.data?.reference;
+  const formats = ['+213661445566', '00213661445566', '0661445566', '0661 44 55 66'];
+  const codes = [];
+  for (const phone of formats) {
+    const r = await fetch(`${API}/api/orders/lookup?reference=${intlRef}&phone=${encodeURIComponent(phone)}`);
+    codes.push(r.status);
+  }
+  ok('Le suivi accepte toutes les écritures du même numéro', codes.every((c) => c === 200),
+    formats.map((f, i) => `${f} → ${codes[i]}`).join(', '));
+  ok('Un autre numéro reste refusé malgré la normalisation',
+    (await fetch(`${API}/api/orders/lookup?reference=${intlRef}&phone=0661445567`)).status === 404);
 }
 
 await browser.close();
