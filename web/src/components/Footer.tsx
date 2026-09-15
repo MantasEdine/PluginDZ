@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Logo } from './Logo';
+import { OfficialBadge } from './OfficialBadge';
 import { useI18n } from './LocaleProvider';
 import { IconFacebook, IconInstagram, IconTikTok, IconWhatsApp } from './SocialIcons';
 import { SOCIAL_LINKS, WHATSAPP_DISPLAY, whatsappLink } from '@/lib/contact';
@@ -18,8 +19,11 @@ export function Footer() {
     <footer className="mt-16 bg-navy-800 text-white">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-3">
         <div>
-          <span className="inline-block rounded bg-white px-2.5 py-1.5">
-            <Logo verified verifiedLabel={t('brand.official')} />
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-block rounded bg-white px-2.5 py-1.5">
+              <Logo />
+            </span>
+            <OfficialBadge label={t('brand.official')} />
           </span>
           <p className="mt-3 text-sm text-white/70">{t('common.tagline')}</p>
           {/* Les réseaux sont la vitrine réelle de la boutique : c'est là que les

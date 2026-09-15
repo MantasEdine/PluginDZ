@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Logo } from './Logo';
+import { OfficialBadge } from './OfficialBadge';
 import { LangSwitcher } from './LangSwitcher';
 import { useI18n } from './LocaleProvider';
 import { useCart } from './CartProvider';
@@ -23,11 +24,17 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-navy-700 text-white shadow-md">
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-3 sm:gap-4 sm:px-4">
-        {/* Sur téléphone, seule l'icône : le mot-symbole ferait déborder l'en-tête. */}
-        <Link href="/" className="shrink-0 rounded bg-white px-2 py-1.5 sm:px-2.5" aria-label="Plugin.dz">
-          <span className="flex sm:hidden"><Logo compact verified verifiedLabel={t('brand.official')} /></span>
-          <span className="hidden sm:flex"><Logo verified verifiedLabel={t('brand.official')} /></span>
-        </Link>
+        {/* Le logo dans sa boîte blanche, la pastille officielle posée juste à côté,
+            sur le bleu nuit — comme un signe à côté d'un nom de compte, pas un
+            élément de la marque. Sur téléphone, seule l'icône : le mot-symbole
+            ferait déborder l'en-tête. */}
+        <span className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <Link href="/" className="shrink-0 rounded bg-white px-2 py-1.5 sm:px-2.5" aria-label="Plugin.dz">
+            <span className="flex sm:hidden"><Logo compact /></span>
+            <span className="hidden sm:flex"><Logo /></span>
+          </Link>
+          <OfficialBadge label={t('brand.official')} className="h-5 w-5 sm:h-6 sm:w-6" />
+        </span>
 
         <nav className="hidden flex-1 items-center gap-1 lg:flex">
           {links.map((link) => (

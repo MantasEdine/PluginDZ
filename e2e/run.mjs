@@ -98,6 +98,10 @@ section('Fiche produit et panier');
   const first = page.locator('a.card').first();
   await first.click();
   await page.waitForLoadState('networkidle');
+  // Depuis les écrans d'attente, « réseau au repos » peut survenir pendant que le
+  // squelette est encore affiché : on attend le vrai contenu, pas le silence réseau.
+  await page.locator('h1').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForFunction(() => document.querySelectorAll('.skeleton').length === 0, null, { timeout: 15000 });
   ok('La fiche produit s\'ouvre', (await page.locator('h1').first().innerText()).length > 0);
   ok('Le prix est affiché', (await page.locator('body').innerText()).includes('DA'));
 
