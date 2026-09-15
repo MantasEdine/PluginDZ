@@ -7,6 +7,7 @@ import { PUBLIC_API_URL, type Wilaya } from '@/lib/api';
 import { formatDa } from '@/lib/format';
 import { useCart } from '@/components/CartProvider';
 import { useI18n } from '@/components/LocaleProvider';
+import { SkeletonLine } from '@/components/Skeleton';
 import { readAttribution } from '@/lib/attribution';
 
 export default function CheckoutPage() {
@@ -87,7 +88,26 @@ export default function CheckoutPage() {
         }
     }
 
-    if (!ready) return <div className="mx-auto max-w-4xl px-4 py-16 text-slate-500">{t('common.loading')}</div>;
+    // Même principe qu'au panier : la silhouette du formulaire apparaît tout de
+    // suite, le visiteur sait qu'il est au bon endroit.
+    if (!ready) {
+        return (
+            <div className="mx-auto max-w-5xl px-4 py-10">
+                <SkeletonLine className="mb-6 h-8 w-64" />
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <div className="space-y-4 lg:col-span-2" aria-hidden="true">
+                        {Array.from({ length: 5 }, (_, i) => <SkeletonLine key={i} className="h-11 w-full" />)}
+                    </div>
+                    <aside className="h-fit space-y-3 rounded-xl border border-slate-200 bg-white p-5" aria-hidden="true">
+                        <SkeletonLine className="h-5 w-32" />
+                        <SkeletonLine className="h-4 w-full" />
+                        <SkeletonLine className="h-11 w-full" />
+                    </aside>
+                </div>
+                <span className="sr-only">{t('common.loading')}</span>
+            </div>
+        );
+    }
 
     return (
         <div className="mx-auto max-w-5xl px-4 py-10">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { adminFetch } from '@/lib/admin';
+import { SkeletonLine, SkeletonTiles } from '@/components/Skeleton';
 import { formatDa } from '@/lib/format';
 import { BarChart } from '@/components/admin/Charts';
 import { StatTile } from '@/components/admin/StatTile';
@@ -41,7 +42,18 @@ export default function RevenueDashboard() {
   }, []);
 
   if (error) return <p className="text-red-600">Impossible de charger les statistiques.</p>;
-  if (!data) return <p className="text-slate-500">Chargement...</p>;
+  // Les graphiques arrivent après une requête : on réserve leur place pour que la
+  // page ne saute pas au moment où les courbes s'affichent.
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <SkeletonLine className="h-7 w-48" />
+        <SkeletonTiles count={3} />
+        <SkeletonLine className="h-64 w-full" />
+        <SkeletonLine className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const { summary } = data;
 

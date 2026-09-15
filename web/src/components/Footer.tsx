@@ -19,7 +19,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-3">
         <div>
           <span className="inline-block rounded bg-white px-2.5 py-1.5">
-            <Logo />
+            <Logo verified verifiedLabel={t('brand.official')} />
           </span>
           <p className="mt-3 text-sm text-white/70">{t('common.tagline')}</p>
           {/* Les réseaux sont la vitrine réelle de la boutique : c'est là que les

@@ -293,6 +293,7 @@ function ProductForm({ product, brands, types, onClose, onSaved }: {
                     slug={product.slug}
                     variants={product.variants.map((v) => ({
                         id: v.id,
+                        stock: v.stock,
                         label: [v.color, v.power, v.plugType].filter(Boolean).join(' · ')
                             || `Déclinaison ${v.id}`,
                     }))}

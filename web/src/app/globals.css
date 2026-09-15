@@ -27,6 +27,33 @@ body {
 /* En arabe on garde les mêmes composants : seule la direction change. */
 [dir='rtl'] body { font-family: 'Noto Sans Arabic', 'Segoe UI', system-ui, sans-serif; }
 
+/*
+ * Blocs d'attente (« squelettes »).
+ *
+ * Sur une connexion mobile algérienne, une page peut mettre plusieurs secondes à
+ * arriver. Sans repère, l'écran reste figé sur la page précédente et le visiteur
+ * croit que rien ne se passe — puis repart. Ces blocs gris montrent tout de suite
+ * la forme de ce qui charge : la page paraît répondre, et l'attente paraît courte.
+ */
+.skeleton {
+  background: linear-gradient(90deg, #e9eef5 25%, #f4f7fb 37%, #e9eef5 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes skeleton-sweep {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Respecte le réglage système « réduire les animations » : le bloc reste visible,
+   il cesse simplement de défiler. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
 .card {
   @apply rounded-xl border border-slate-200 bg-white transition hover:border-plug-400 hover:shadow-lg;
 }

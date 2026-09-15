@@ -60,8 +60,11 @@ export function TrustBar() {
 
   return (
     <div className="bg-navy-900 text-white">
-      {/* Défilement horizontal sur petit écran plutôt qu'un retour à la ligne disgracieux. */}
-      <div className="mx-auto flex max-w-7xl items-center gap-5 overflow-x-auto px-4 py-2 text-[11px] font-medium sm:justify-center sm:gap-8 sm:text-xs">
+      {/* Les quatre promesses passent à la ligne au lieu de défiler horizontalement.
+          Avec un défilement, un téléphone n'en montrait que deux : « Livraison
+          gratuite » et « Paiement à la livraison » — les deux arguments qui font
+          commander — restaient cachés derrière un geste que personne ne fait. */}
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-2 text-[11px] font-medium sm:gap-x-8 sm:text-xs">
         {items.map((item, index) => (
           <span key={index} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-white/85">
             <span className="text-plug-400">{item.icon}</span>

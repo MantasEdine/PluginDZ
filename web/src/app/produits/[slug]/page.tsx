@@ -83,7 +83,12 @@ export default async function ProductPage({ params }: Params) {
         </div>
 
         <div>
-          <Link href={`/marques/${product.brand.slug}`} className="text-sm font-bold uppercase tracking-wide text-plug-500">
+          {/* Étiquette discrète, mais bel et bien cliquable : sur mobile elle doit
+              offrir une hauteur de touche décente, sans grossir visuellement. */}
+          <Link
+            href={`/marques/${product.brand.slug}`}
+            className="inline-flex min-h-11 items-center text-sm font-bold uppercase tracking-wide text-plug-500 sm:min-h-0"
+          >
             {product.brand.name}
           </Link>
           <h1 className="mt-1 text-3xl font-extrabold text-navy-900">{product.name}</h1>

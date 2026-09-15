@@ -126,8 +126,13 @@ export function SectionTitle({ title, subtitle, href, linkLabel, as = 'h2' }: {
         <Heading className="text-2xl font-extrabold text-navy-900">{title}</Heading>
         {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
       </div>
+      {/* `min-h-11` : 20 px de haut, c'est un lien qu'on rate au pouce. La hauteur
+          n'est forcée que sur mobile, où l'on touche l'écran. */}
       {href && (
-        <Link href={href} className="shrink-0 text-sm font-semibold text-plug-500 hover:underline">
+        <Link
+          href={href}
+          className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-plug-500 hover:underline sm:min-h-0"
+        >
           {linkLabel} →
         </Link>
       )}
