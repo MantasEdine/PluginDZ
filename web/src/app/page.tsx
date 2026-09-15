@@ -1,4 +1,10 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/seo';
+
+export const metadata: Metadata = {
+  alternates: { canonical: SITE_URL },
+};
 import { api } from '@/lib/api';
 import { getTranslations } from '@/lib/locale-server';
 import { PackCard, ProductCard, SectionTitle } from '@/components/Cards';

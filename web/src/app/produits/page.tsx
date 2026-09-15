@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SITE_URL } from '@/lib/seo';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
@@ -7,8 +8,11 @@ import { ProductCard } from '@/components/Cards';
 import { Filters } from '@/components/Filters';
 
 export const metadata: Metadata = {
-  title: 'Catalogue de chargeurs',
-  description: 'Tous les chargeurs disponibles en gros et demi-gros : téléphone, montre, caméra, vélo électrique.',
+  title: 'Accessoires téléphone en Algérie — chargeurs, câbles, cartes mémoire',
+  description:
+    "Chargeurs, câbles, flash disques et cartes mémoire en Algérie. Prix de gros et demi-gros, "
+    + 'livraison 69 wilayas, paiement à la livraison.',
+  alternates: { canonical: `${SITE_URL}/produits` },
 };
 
 type Search = Promise<Record<string, string | string[] | undefined>>;

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { JsonLd } from '@/components/JsonLd';
+import { breadcrumbJsonLd, metaDescription, packJsonLd, SITE_URL } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
@@ -14,9 +16,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const pack = await api.pack(slug);
   if (!pack?.data) return { title: 'Pack' };
+  const fallback = `${pack.data.name} — pack de gros à ${pack.data.price} DA. Livraison 69 wilayas, paiement à la livraison.`;
   return {
-    title: pack.data.name,
-    description: pack.data.description.slice(0, 160),
+    title: `${pack.data.name} — Pack gros | Prix Algérie`,
+    description: metaDescription(pack.data.description, fallback),
+    alternates: { canonical: `${SITE_URL}/packs/${pack.data.slug}` },
+    openGraph: {
+      type: 'website',
+      title: pack.data.name,
+      description: metaDescription(pack.data.description, fallback),
+      url: `${SITE_URL}/packs/${pack.data.slug}`,
+      images: pack.data.imageUrl ? [pack.data.imageUrl] : undefined,
+    },
   };
 }
 
@@ -28,6 +39,14 @@ export default async function PackPage({ params }: Params) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
+      <JsonLd data={packJsonLd(pack)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Accueil', path: '/' },
+          { name: 'Packs', path: '/packs' },
+          { name: pack.name, path: `/packs/${pack.slug}` },
+        ])}
+      />
       <nav className="mb-6 text-sm text-slate-500">
         <Link href="/packs" className="hover:text-navy-700">{t('pack.title')}</Link>
       </nav>

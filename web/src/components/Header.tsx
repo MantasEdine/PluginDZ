@@ -48,7 +48,7 @@ export function Header() {
           <Link
             href="/panier"
             aria-label={t('nav.cart')}
-            className="relative shrink-0 rounded-lg bg-plug-500 px-3 py-2 text-sm font-semibold hover:bg-plug-600 sm:px-3.5"
+            className="relative inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-plug-500 px-3 py-2 text-sm font-semibold hover:bg-plug-600 sm:min-h-0 sm:px-3.5"
           >
             <svg className="h-5 w-5 sm:hidden" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M2.5 3h1.9l1.8 9.2a1.4 1.4 0 0 0 1.4 1.1h6.6a1.4 1.4 0 0 0 1.4-1.1L17 6H5.2" />
@@ -65,7 +65,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="shrink-0 rounded-lg border border-white/25 px-3 py-2 text-sm lg:hidden"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-white/25 px-3 py-2 text-sm sm:min-h-0 lg:hidden"
             aria-expanded={open}
             aria-label={t('nav.menu')}
           >
