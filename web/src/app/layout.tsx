@@ -12,6 +12,7 @@ import { JsonLd } from '@/components/JsonLd';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
 /** Métadonnées par langue : ce qu'affiche le site et ce qu'indexe Google doivent correspondre. */
 const SITE_META: Record<Locale, {
@@ -52,6 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
             description: meta.description,
         },
         robots: { index: true, follow: true },
+        // Vérification de propriété Google Search Console. La valeur vient des
+        // variables d'environnement (Vercel) : rien à committer, et la balise
+        // disparaît simplement si la variable n'est pas définie.
+        verification: googleVerification ? { google: googleVerification } : undefined,
     };
 }
 
