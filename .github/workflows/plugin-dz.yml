@@ -90,3 +90,74 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  prospection-api:
+    name: Prospection API (Go — vet, tests, build)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: prospection_ci
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    defaults:
+      run:
+        working-directory: prospection/api
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: prospection/api/go.mod
+          cache-dependency-path: prospection/api/go.sum
+
+      - name: Vet
+        run: go vet ./...
+
+      # Le test Postgres ne tourne que si l'URL est fournie : ici elle l'est,
+      # pour que l'implémentation de production soit exercée à chaque push.
+      - name: Tests
+        env:
+          PROSPECTION_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/prospection_ci
+        run: go test ./...
+
+      - name: Build
+        run: go build ./...
+
+  prospection-collector:
+    name: Prospection collecteur (Python — ruff, tests)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: prospection/collector
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests phonenumbers pytest ruff
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Tests
+        run: pytest

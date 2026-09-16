@@ -28,7 +28,10 @@ export async function adminFetch<T>(
   const token = getToken();
   const isFormData = init.body instanceof FormData;
 
-  const response = await fetch(`${PUBLIC_API_URL}${path}`, {
+  // Un chemin relatif vise l'API boutique ; une URL absolue vise un autre
+  // service (prospection) avec le même jeton.
+  const url = /^https?:\/\//.test(path) ? path : `${PUBLIC_API_URL}${path}`;
+  const response = await fetch(url, {
     ...init,
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),

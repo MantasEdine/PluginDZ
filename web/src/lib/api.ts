@@ -6,6 +6,8 @@ export const API_URL = (
 ).replace(/\/$/, '');
 
 export const PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL ?? API_URL).replace(/\/$/, '');
+/** Service de prospection (Go). Même jeton admin, autre processus. */
+export const PROSPECTION_URL = (process.env.NEXT_PUBLIC_PROSPECTION_URL ?? 'http://localhost:8080').replace(/\/$/, '');
 
 export interface Variant {
   id: number; color: string | null; power: string | null; plugType: string | null;
