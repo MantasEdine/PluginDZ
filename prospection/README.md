@@ -94,18 +94,24 @@ ces champs placent l'appel dans le palier *Text Search Enterprise*, dont Google
 offre **1 000 appels par mois** (tarif en vigueur sur la page *Places API (New)
 pricing*). Un passage complet — 3 formulations × 69 wilayas × jusqu'à 3 pages —
 fait au plus ~620 appels : **un passage par mois reste gratuit**, c'est le
-rythme du workflow. Deux garde-fous à poser une fois pour toutes :
+rythme du workflow. Trois garde-fous, du plus sûr au plus indicatif :
 
-1. **Quota dur** (Google refuse au-delà, rien n'est facturé) :
+1. **Le plafond du collecteur, dans le code** : `--max-calls`, **700 par
+   passage** par défaut. Le client compte chaque page demandée et refuse la
+   suivante une fois le plafond atteint ; ce qui a déjà été collecté est
+   conservé et envoyé. Une boucle, un bug, une relance de trop : impossible
+   de dépasser. C'est le seul garde-fou qui ne dépend pas de Google.
+2. **Quota Google** (s'il est modifiable — un compte en période d'essai ne
+   peut pas le baisser, l'option est grisée) :
    https://console.cloud.google.com/apis/api/places.googleapis.com/quotas →
-   *Text Search requests per day* → 700. Un passage complet tient ; une
-   boucle ou une erreur ne peut pas dépasser.
-2. **Alerte de budget** (prévient, ne bloque pas) :
+   *SearchTextRequest per day* → 700.
+3. **Alerte de budget** (prévient, ne bloque pas) :
    https://console.cloud.google.com/billing/budgets → budget de 5 $ avec
    alertes à 50 % et 100 %.
 
 Pendant l'essai gratuit (crédit offert), rien n'est débité tant que le compte
-n'est pas passé manuellement en compte payant. Commencer par deux wilayas.
+n'est pas passé manuellement en compte payant — ne pas cliquer « Activer le
+compte complet ». Commencer par deux wilayas.
 
 ## Ce que le service garantit
 

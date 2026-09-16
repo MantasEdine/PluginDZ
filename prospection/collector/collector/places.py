@@ -50,6 +50,16 @@ class PlacesError(RuntimeError):
     """Google a refusé ou n'a pas répondu."""
 
 
+class BudgetExhausted(PlacesError):
+    """Le nombre d'appels autorisés pour ce passage est atteint.
+
+    C'est le plafond de coût du collecteur, tenu par le code lui-même :
+    Google ne laisse pas toujours abaisser ses quotas (compte en essai), et
+    chaque appel est facturé. Quand il est atteint, on s'arrête net — les
+    fiches déjà obtenues sont conservées et envoyées.
+    """
+
+
 class PlacesClient:
     """Recherche textuelle paginée, restreinte à l'Algérie et en français."""
 
@@ -62,6 +72,7 @@ class PlacesClient:
         region: str = "DZ",
         page_delay: float = 1.0,
         sleep: Callable[[float], None] = time.sleep,
+        max_calls: int | None = None,
     ) -> None:
         self._post = post or self._http_post
         self._api_key = api_key
@@ -69,7 +80,14 @@ class PlacesClient:
         self._region = region
         self._page_delay = page_delay
         self._sleep = sleep
+        self._max_calls = max_calls
         self._session = requests.Session()
+        # Appels réellement partis vers Google (une page = un appel facturé).
+        self.calls = 0
+
+    @property
+    def max_calls(self) -> int | None:
+        return self._max_calls
 
     def _http_post(self, body: dict[str, Any]) -> dict[str, Any]:
         response = self._session.post(
@@ -99,6 +117,9 @@ class PlacesClient:
             }
             if token:
                 body["pageToken"] = token
+            if self._max_calls is not None and self.calls >= self._max_calls:
+                raise BudgetExhausted(f"{self.calls} appel(s) Google : plafond --max-calls atteint")
+            self.calls += 1
             data = self._post(body)
             places.extend(data.get("places", []))
             token = data.get("nextPageToken")
