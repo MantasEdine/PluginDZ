@@ -88,17 +88,29 @@ seul compte pour les deux.
    la clé à l'API Places (New) — une clé sans restriction qui fuit coûte cher.
 4. La clé va dans `PLACES_API_KEY` (jamais dans le dépôt).
 
-**Coût.** Chaque page de résultats est un appel facturé ; le collecteur ne
-demande que les champs utilisés (le *field mask*), ce qui le maintient dans le
-tarif de base. Un passage complet — 3 formulations × 69 wilayas × jusqu'à 3
-pages — fait au plus ~600 appels. Google offre un crédit mensuel ; vérifier le
-tarif en vigueur sur la page *Places API (New) pricing* avant un passage
-complet, et commencer par quelques wilayas.
+**Coût — et comment le plafonner.** Chaque page de résultats est un appel
+facturé. Le collecteur demande le numéro de téléphone, le site et la note :
+ces champs placent l'appel dans le palier *Text Search Enterprise*, dont Google
+offre **1 000 appels par mois** (tarif en vigueur sur la page *Places API (New)
+pricing*). Un passage complet — 3 formulations × 69 wilayas × jusqu'à 3 pages —
+fait au plus ~620 appels : **un passage par mois reste gratuit**, c'est le
+rythme du workflow. Deux garde-fous à poser une fois pour toutes :
+
+1. **Quota dur** (Google refuse au-delà, rien n'est facturé) :
+   https://console.cloud.google.com/apis/api/places.googleapis.com/quotas →
+   *Text Search requests per day* → 700. Un passage complet tient ; une
+   boucle ou une erreur ne peut pas dépasser.
+2. **Alerte de budget** (prévient, ne bloque pas) :
+   https://console.cloud.google.com/billing/budgets → budget de 5 $ avec
+   alertes à 50 % et 100 %.
+
+Pendant l'essai gratuit (crédit offert), rien n'est débité tant que le compte
+n'est pas passé manuellement en compte payant. Commencer par deux wilayas.
 
 ## Ce que le service garantit
 
 - **Pas de doublon.** Une même fiche Google (même `place_id`) ou un même numéro
-  ne donne qu'un prospect, même si le collecteur repasse chaque semaine.
+  ne donne qu'un prospect, même si le collecteur repasse chaque mois.
 - **Le suivi ne s'efface jamais.** Une nouvelle collecte met à jour le nom,
   l'adresse, la note Google ; elle ne touche ni au statut, ni à la note du
   gérant, ni à la date de premier contact.
@@ -171,8 +183,8 @@ Réponses `{ "data": … }` en succès, `{ "error": "…" }` sinon.
    redéployer.
 
 **Collecteur → GitHub Actions** (gratuit, sans serveur)
-Le workflow `.github/workflows/prospection-collect.yml` tourne chaque lundi
-matin et à la demande (onglet *Actions*, avec un choix de wilayas). Il lui faut
+Le workflow `.github/workflows/prospection-collect.yml` tourne le 1er de
+chaque mois et à la demande (onglet *Actions*, avec un choix de wilayas). Il lui faut
 trois secrets de dépôt : `PLACES_API_KEY`, `PROSPECTION_API_URL`,
 `COLLECTOR_TOKEN`. Tant qu'ils manquent, il s'arrête proprement au lieu
 d'échouer. Le `Dockerfile` du collecteur sert si l'on préfère un cron Railway.
