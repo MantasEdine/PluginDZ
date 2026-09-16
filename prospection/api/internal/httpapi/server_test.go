@@ -312,7 +312,7 @@ func TestContact_MobileGetsBothLinks(t *testing.T) {
 		t.Error("le texte du lien doit être exactement le message affiché")
 	}
 	msg := c["message"].(string)
-	for _, want := range []string{"محل النور", "Pack 10 Chargeurs iPhone Hoco N7 20W", "12 500 دج", "utm_campaign=prospection"} {
+	for _, want := range []string{"محل النور", "Pack 10 Chargeurs iPhone Hoco N7 20W", "1250 دج للقطعة", "utm_campaign=prospection"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("message sans %q", want)
 		}

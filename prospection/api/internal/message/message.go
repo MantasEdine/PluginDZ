@@ -75,8 +75,12 @@ func Build(shopName string, packs []Pack, opts Options) string {
 	b.WriteString("🚚 التوصيل مجاني إلى 69 ولاية\n")
 	b.WriteString("💵 الدفع عند الاستلام\n")
 
+	// Les prix sont donnés à la pièce : c'est ce qu'un revendeur compare
+	// d'un fournisseur à l'autre. La vente reste par pack (5, 10 pièces ou
+	// plus) — la note qui suit la liste le dit, une seule fois, plutôt que
+	// d'alourdir chaque ligne.
 	if len(packs) > 0 {
-		b.WriteString("\n📦 عروض الباقات الحالية:\n")
+		b.WriteString("\n📦 أسعارنا الحالية (سعر القطعة الواحدة):\n")
 		limit := opts.MaxPacks
 		if limit <= 0 || limit > len(packs) {
 			limit = len(packs)
@@ -85,24 +89,10 @@ func Build(shopName string, packs []Pack, opts Options) string {
 			b.WriteString("• ")
 			b.WriteString(p.Name)
 			b.WriteString(" — ")
-			b.WriteString(formatDA(p.Price))
-			if p.TotalUnits > 1 || p.Savings > 0 {
-				b.WriteString(" (")
-				if p.TotalUnits > 1 {
-					b.WriteString(strconv.Itoa(p.TotalUnits))
-					b.WriteString(" قطعة")
-				}
-				if p.Savings > 0 {
-					if p.TotalUnits > 1 {
-						b.WriteString("، ")
-					}
-					b.WriteString("توفر ")
-					b.WriteString(formatDA(p.Savings))
-				}
-				b.WriteString(")")
-			}
-			b.WriteString("\n")
+			b.WriteString(formatDA(UnitPrice(p)))
+			b.WriteString(" للقطعة\n")
 		}
+		b.WriteString("ℹ️ البيع بالباقات: 5 أو 10 قطع فأكثر حسب المنتج.\n")
 	}
 
 	b.WriteString("\n🛒 الكتالوغ الكامل والطلب مباشرة من هنا:\n")
@@ -128,18 +118,18 @@ func TelLink(e164 string) string {
 	return "tel:" + e164
 }
 
-// formatDA écrit un montant en dinars, milliers groupés par une espace,
-// avec le symbole arabe — « 12 500 دج ». Les chiffres restent occidentaux,
-// comme sur le site en arabe.
-func formatDA(amount int) string {
-	digits := strconv.Itoa(amount)
-	var b strings.Builder
-	for i, r := range digits {
-		if i > 0 && (len(digits)-i)%3 == 0 {
-			b.WriteByte(' ')
-		}
-		b.WriteRune(r)
+// UnitPrice est le prix d'une pièce dans le pack, arrondi au dinar. Un pack
+// sans quantité connue (0 ou 1) vaut son prix tel quel.
+func UnitPrice(p Pack) int {
+	if p.TotalUnits <= 1 {
+		return p.Price
 	}
-	b.WriteString(" دج")
-	return b.String()
+	return (p.Price + p.TotalUnits/2) / p.TotalUnits
+}
+
+// formatDA écrit un montant en dinars, chiffres collés, avec le symbole
+// arabe — « 12500 دج ». Pas de séparateur de milliers : dans un message
+// WhatsApp, une espace au milieu d'un nombre se lit comme deux nombres.
+func formatDA(amount int) string {
+	return strconv.Itoa(amount) + " دج"
 }
