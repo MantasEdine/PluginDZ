@@ -1,0 +1,72 @@
+# Collecte planifiée des prospects (Google Places → service de prospection).
+#
+# Tourne chaque lundi à 6 h UTC (7 h à Alger), ou à la main depuis l'onglet
+# Actions. Sans la clé Google dans les secrets du dépôt, le job s'arrête
+# poliment au lieu d'échouer en rouge chaque semaine.
+#
+# Secrets à définir dans Settings → Secrets and variables → Actions :
+#   PLACES_API_KEY        clé Google Cloud avec l'API Places (New) activée
+#   PROSPECTION_API_URL   URL publique du service Go (ex. https://prospection.up.railway.app)
+#   COLLECTOR_TOKEN       le même COLLECTOR_TOKEN que celui du service
+
+name: Prospection — collecte
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      wilayas:
+        description: "Wilayas à collecter, séparées par des espaces (vide = les 69)"
+        required: false
+        default: ""
+
+jobs:
+  collect:
+    name: Collecter et envoyer
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prospection/collector
+
+    steps:
+      - name: Vérifier la configuration
+        id: config
+        env:
+          HAS_KEY: ${{ secrets.PLACES_API_KEY != '' && secrets.PROSPECTION_API_URL != '' && secrets.COLLECTOR_TOKEN != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::notice::PLACES_API_KEY / PROSPECTION_API_URL / COLLECTOR_TOKEN absents : collecte ignorée."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Python
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer
+        if: steps.config.outputs.configured == 'true'
+        run: pip install .
+
+      - name: Collecter
+        if: steps.config.outputs.configured == 'true'
+        env:
+          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
+          PROSPECTION_API_URL: ${{ secrets.PROSPECTION_API_URL }}
+          COLLECTOR_TOKEN: ${{ secrets.COLLECTOR_TOKEN }}
+          WILAYAS: ${{ github.event.inputs.wilayas }}
+        run: |
+          if [ -n "$WILAYAS" ]; then
+            # shellcheck disable=SC2086
+            plugin-collect run --wilayas $WILAYAS
+          else
+            plugin-collect run
+          fi

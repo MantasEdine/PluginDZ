@@ -11,6 +11,7 @@ const LINKS = [
   { href: '/admin/revenus', label: 'Revenus' },
   { href: '/admin/audience', label: 'Audience' },
   { href: '/admin/commandes', label: 'Commandes' },
+  { href: '/admin/prospection', label: 'Prospection' },
   { href: '/admin/produits', label: 'Produits' },
   { href: '/admin/packs', label: 'Packs' },
   { href: '/admin/marques', label: 'Marques & types' },

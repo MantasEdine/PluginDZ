@@ -11,10 +11,17 @@ réception.
 
 ```
 .
-├── server/     API Node + Express + TypeScript + Prisma + PostgreSQL
-├── web/        Vitrine + back-office Next.js 15 + Tailwind v4
-└── e2e/        Parcours acheteur de bout en bout (Playwright)
+├── server/          API Node + Express + TypeScript + Prisma + PostgreSQL
+├── web/             Vitrine + back-office Next.js 15 + Tailwind v4
+├── e2e/             Parcours acheteur de bout en bout (Playwright)
+└── prospection/     Service de prospection — API Go + collecteur Python
+    ├── api/         Prospects, suivi commercial, message WhatsApp (même jeton admin)
+    └── collector/   Google Places → boutiques d'accessoires par wilaya
 ```
+
+Le service de prospection a son propre [README](prospection/README.md) :
+clé Google, variables, déploiement, et comment relire ou modifier le message
+envoyé aux boutiques.
 
 ## Démarrage local
 
@@ -126,6 +133,12 @@ Search Console se pose via `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
 - **Commandes** : liste filtrable (référence, nom, téléphone sous toutes ses
   écritures, wilaya), détail, changement de statut.
 - **Marques & types** : création, renommage, suppression.
+- **Prospection** : boutiques d'accessoires repérées sur Google Places, par
+  wilaya, avec suivi (nouveau → contacté → intéressé → client), bouton
+  **WhatsApp** qui ouvre la conversation avec un message en arabe déjà écrit
+  (packs et prix lus en direct sur la boutique, lien marqué pour l'attribution)
+  et bouton **Appeler**. Rien n'est envoyé automatiquement : le gérant relit et
+  envoie, un prospect à la fois.
 
 ## Modèle de données
 
