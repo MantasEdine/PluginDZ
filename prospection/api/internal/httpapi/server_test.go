@@ -247,11 +247,11 @@ func TestList_Filters(t *testing.T) {
 	do(t, s, http.MethodPatch, "/leads/3", map[string]any{"status": "client"}, auth)
 
 	cases := map[string]int{
-		"/leads":                    3,
-		"/leads?wilaya=oran":        2,
-		"/leads?status=client":      1,
-		"/leads?q=beta":             1,
-		"/leads?q=0661000001":       1,
+		"/leads":                            3,
+		"/leads?wilaya=oran":                2,
+		"/leads?status=client":              1,
+		"/leads?q=beta":                     1,
+		"/leads?q=0661000001":               1,
 		"/leads?wilaya=Oran&status=nouveau": 1,
 	}
 	for path, want := range cases {

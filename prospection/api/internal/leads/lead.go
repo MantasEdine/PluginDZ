@@ -21,11 +21,11 @@ import (
 type Status string
 
 const (
-	StatusNouveau       Status = "nouveau"
-	StatusContacte      Status = "contacte"
-	StatusInteresse     Status = "interesse"
-	StatusClient        Status = "client"
-	StatusPasInteresse  Status = "pas_interesse"
+	StatusNouveau        Status = "nouveau"
+	StatusContacte       Status = "contacte"
+	StatusInteresse      Status = "interesse"
+	StatusClient         Status = "client"
+	StatusPasInteresse   Status = "pas_interesse"
 	StatusNePasContacter Status = "ne_pas_contacter"
 )
 

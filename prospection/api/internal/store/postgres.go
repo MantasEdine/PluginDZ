@@ -111,11 +111,11 @@ const leadColumns = `id, source, source_id, name, phone_e164, phone_national, is
 // chaînes vides ou des pointeurs nuls, comme dans la version mémoire.
 func scanLead(row pgx.Row) (leads.Lead, error) {
 	var (
-		l                                                  leads.Lead
+		l                                                    leads.Lead
 		phoneE164, phoneNational, address, wilaya, maps, web *string
-		rating                                             *float64
-		ratingCount                                        *int
-		status                                             string
+		rating                                               *float64
+		ratingCount                                          *int
+		status                                               string
 	)
 	err := row.Scan(&l.ID, &l.Source, &l.SourceID, &l.Name, &phoneE164, &phoneNational, &l.IsMobile,
 		&address, &wilaya, &l.Lat, &l.Lng, &maps, &web, &rating, &ratingCount,
@@ -137,7 +137,7 @@ func deref(s *string) string {
 	return *s
 }
 
-// nullable renvoie nil pour une chaîne vide, pour écrire NULL plutôt que ''.
+// nullable renvoie nil pour une chaîne vide, pour écrire NULL plutôt que ”.
 func nullable(s string) *string {
 	if s == "" {
 		return nil

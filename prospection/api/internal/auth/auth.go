@@ -80,7 +80,7 @@ func (v *Verifier) RequireAdmin(next http.Handler) http.Handler {
 		}
 		admin, err := v.Parse(strings.TrimPrefix(header, "Bearer "))
 		if err != nil {
-			unauthorized(w, "Session expirée, reconnectez-vous")
+			unauthorized(w, "Jeton refusé par le service de prospection : session expirée, ou JWT_SECRET différent de celui de l'API boutique")
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, admin)))

@@ -81,10 +81,10 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 // ingestResult dit au collecteur ce qu'il est advenu de son lot.
 type ingestResult struct {
-	Created  int            `json:"created"`
-	Updated  int            `json:"updated"`
-	Skipped  []ingestSkip   `json:"skipped"`
-	Warnings []ingestSkip   `json:"warnings"`
+	Created  int          `json:"created"`
+	Updated  int          `json:"updated"`
+	Skipped  []ingestSkip `json:"skipped"`
+	Warnings []ingestSkip `json:"warnings"`
 }
 
 type ingestSkip struct {
