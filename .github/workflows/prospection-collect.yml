@@ -1,8 +1,12 @@
 # Collecte planifiée des prospects (Google Places → service de prospection).
 #
-# Tourne chaque lundi à 6 h UTC (7 h à Alger), ou à la main depuis l'onglet
-# Actions. Sans la clé Google dans les secrets du dépôt, le job s'arrête
-# poliment au lieu d'échouer en rouge chaque semaine.
+# Tourne le 1er de chaque mois à 6 h UTC (7 h à Alger), ou à la main depuis
+# l'onglet Actions. Mensuel, pas hebdomadaire : un passage complet fait au plus
+# ~620 appels Places et le quota gratuit du palier facturé ici (Text Search
+# Enterprise : numéro de téléphone, site, note) est de 1 000 appels par mois.
+# Quatre passages par mois seraient facturés ; un seul reste gratuit.
+# Sans la clé Google dans les secrets du dépôt, le job s'arrête poliment au
+# lieu d'échouer en rouge chaque mois.
 #
 # Secrets à définir dans Settings → Secrets and variables → Actions :
 #   PLACES_API_KEY        clé Google Cloud avec l'API Places (New) activée
@@ -13,7 +17,7 @@ name: Prospection — collecte
 
 on:
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "0 6 1 * *"
   workflow_dispatch:
     inputs:
       wilayas:
