@@ -320,6 +320,14 @@ func (p *Postgres) Stats(ctx context.Context) (Stats, error) {
 	return s, rows.Err()
 }
 
+func (p *Postgres) DeleteNew(ctx context.Context) (int, error) {
+	tag, err := p.pool.Exec(ctx, `DELETE FROM leads WHERE status = 'nouveau'`)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 func (p *Postgres) Wilayas(ctx context.Context) ([]string, error) {
 	rows, err := p.pool.Query(ctx, `SELECT DISTINCT wilaya FROM leads WHERE wilaya IS NOT NULL ORDER BY wilaya`)
 	if err != nil {
