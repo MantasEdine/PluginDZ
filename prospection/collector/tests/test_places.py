@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from collector.places import FIELD_MASK, PlacesClient, PlacesError, place_to_lead
+from collector.places import (
+    FIELD_MASK,
+    BudgetExhausted,
+    PlacesClient,
+    PlacesError,
+    place_to_lead,
+)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "places_page.json"
 
@@ -98,3 +104,29 @@ def test_place_to_lead_arabic_component(pages):
 def test_place_to_lead_rejects_unusable():
     assert place_to_lead({}, fallback_wilaya=None) is None
     assert place_to_lead({"id": "x", "displayName": {"text": "   "}}, fallback_wilaya=None) is None
+
+
+def test_budget_counts_every_page_and_stops_before_the_next_call(pages):
+    calls = []
+
+    def post(body):
+        calls.append(body)
+        return pages[len(calls) - 1] if len(calls) - 1 < len(pages) else {}
+
+    client = PlacesClient("clé", post=post, sleep=lambda _: None, max_calls=2)
+    # Le fixture a 2 pages : la 1re requête consomme tout le budget.
+    first = client.search_text("magasin accessoires téléphone Alger")
+    assert len(first) > 0
+    assert client.calls == 2
+    # La suivante ne doit pas partir : aucun appel de plus, erreur dédiée.
+    with pytest.raises(BudgetExhausted):
+        client.search_text("magasin accessoires téléphone Oran")
+    assert len(calls) == 2
+    assert isinstance(BudgetExhausted("x"), PlacesError)
+
+
+def test_budget_none_means_unlimited(pages):
+    client, calls = make_client(pages)
+    for _ in range(5):
+        client.search_text("q", max_pages=1)
+    assert client.calls == 5 == len(calls)

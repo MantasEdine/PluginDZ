@@ -78,3 +78,23 @@ def test_run_refuses_to_send_without_service_config(monkeypatch):
     monkeypatch.delenv("PROSPECTION_API_URL", raising=False)
     monkeypatch.delenv("COLLECTOR_TOKEN", raising=False)
     assert cli.main(["run", "--wilayas", "Alger", "--fixture", str(FIXTURE)]) == 2
+
+
+def test_collect_stops_at_budget_and_keeps_what_it_has(caplog):
+    client = PlacesClient("x", post=cli.fixture_poster(FIXTURE), sleep=lambda _: None, max_calls=3)
+    queries = build_queries(["Alger", "Oran"])  # 6 requêtes × 2 pages = 12 appels voulus
+    with caplog.at_level("WARNING", logger="collector"):
+        leads = cli.collect(queries, client)
+    assert client.calls == 3  # jamais un appel de plus que le plafond
+    assert leads, "les fiches déjà obtenues sont conservées"
+    assert "plafond" in caplog.text
+
+
+def test_run_reports_calls_and_budget(capsys, monkeypatch):
+    monkeypatch.delenv("PROSPECTION_API_URL", raising=False)
+    code = cli.main(
+        ["run", "--wilayas", "Alger", "--fixture", str(FIXTURE), "--dry-run", "--max-calls", "4"]
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "4 appel(s) Google sur 4 autorisés" in out

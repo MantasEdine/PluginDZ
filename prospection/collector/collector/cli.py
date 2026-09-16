@@ -21,10 +21,15 @@ from pathlib import Path
 from typing import Any
 
 from .ingest import DEFAULT_BATCH, IngestClient, IngestError
-from .places import PlacesClient, PlacesError, place_to_lead
+from .places import BudgetExhausted, PlacesClient, PlacesError, place_to_lead
 from .plan import build_queries
 
 log = logging.getLogger("collector")
+
+# Plafond d'appels Google par passage. Un passage complet (3 formulations ×
+# 69 wilayas × 3 pages) fait au plus ~620 appels ; le quota gratuit mensuel
+# du palier facturé est de 1 000. À 700, un passage tient, deux ne passent pas.
+DEFAULT_MAX_CALLS = 700
 
 
 def collect(
@@ -41,6 +46,10 @@ def collect(
     for query, wilaya in queries:
         try:
             places = client.search_text(query, max_pages=max_pages)
+        except BudgetExhausted as exc:
+            # Plafond de coût : on garde ce qu'on a et on n'appelle plus Google.
+            log.warning("%s — collecte arrêtée à « %s »", exc, query)
+            break
         except PlacesError as exc:
             # Une requête qui échoue ne doit pas faire perdre les 200 autres.
             log.warning("« %s » : %s — requête ignorée", query, exc)
@@ -76,9 +85,15 @@ def fixture_poster(path: Path):
     return post
 
 
-def _summary(leads: list[dict[str, Any]], result: dict[str, Any] | None) -> str:
+def _summary(
+    leads: list[dict[str, Any]], result: dict[str, Any] | None, *, calls: int, max_calls: int | None
+) -> str:
     with_phone = sum(1 for lead in leads if lead["phone"])
-    lines = [f"{len(leads)} prospect(s) collecté(s), {with_phone} avec numéro"]
+    budget = f" sur {max_calls} autorisés" if max_calls is not None else ""
+    lines = [
+        f"{len(leads)} prospect(s) collecté(s), {with_phone} avec numéro",
+        f"{calls} appel(s) Google{budget}",
+    ]
     if result is not None:
         lines.append(
             f"service : {result['created']} créé(s), {result['updated']} mis à jour, "
@@ -91,15 +106,19 @@ def _summary(leads: list[dict[str, Any]], result: dict[str, Any] | None) -> str:
 
 def run(args: argparse.Namespace) -> int:
     if args.fixture:
+        # Le plafond s'applique aussi au fixture : on teste le vrai comportement.
         client = PlacesClient(
-            "fixture", post=fixture_poster(Path(args.fixture)), sleep=lambda _: None
+            "fixture",
+            post=fixture_poster(Path(args.fixture)),
+            sleep=lambda _: None,
+            max_calls=args.max_calls,
         )
     else:
         api_key = os.environ.get("PLACES_API_KEY", "")
         if not api_key:
             log.error("PLACES_API_KEY manquant (ou utilisez --fixture pour un essai sans Google)")
             return 2
-        client = PlacesClient(api_key)
+        client = PlacesClient(api_key, max_calls=args.max_calls)
 
     try:
         queries = build_queries(args.wilayas)
@@ -131,7 +150,7 @@ def run(args: argparse.Namespace) -> int:
             log.error("envoi refusé : %s", exc)
             return 1
 
-    print(_summary(leads, result))
+    print(_summary(leads, result, calls=client.calls, max_calls=client.max_calls))
     return 0
 
 
@@ -143,6 +162,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("run", help="collecter et envoyer")
     p.add_argument("--wilayas", nargs="+", metavar="WILAYA", help="sous-ensemble (défaut : les 69)")
     p.add_argument("--max-pages", type=int, default=3, help="pages Google par requête (1–3)")
+    p.add_argument(
+        "--max-calls",
+        type=int,
+        default=DEFAULT_MAX_CALLS,
+        help=f"appels Google au plus par passage, le plafond de coût (défaut {DEFAULT_MAX_CALLS})",
+    )
     p.add_argument("--dry-run", action="store_true", help="collecter sans envoyer")
     p.add_argument("--fixture", metavar="FICHIER", help="pages Google lues d'un JSON, sans réseau")
     p.add_argument("--out", metavar="FICHIER", help="écrire les prospects collectés en JSON")
