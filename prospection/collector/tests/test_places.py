@@ -8,6 +8,7 @@ from collector.places import (
     BudgetExhausted,
     PlacesClient,
     PlacesError,
+    is_excluded,
     place_to_lead,
 )
 
@@ -33,7 +34,9 @@ def make_client(pages, *, calls=None):
 def test_search_follows_pagination(pages):
     client, calls = make_client(pages)
     places = client.search_text("magasin accessoires téléphone Alger")
-    assert len(places) == 7  # 5 sur la première page, 2 sur la seconde
+    assert (
+        len(places) == 9
+    )  # 6 sur la première page, 3 sur la seconde (bijouteries incluses : le filtre est plus loin)
     assert len(calls) == 2
     assert "pageToken" not in calls[0]
     assert calls[1]["pageToken"] == "page-2"
@@ -45,7 +48,7 @@ def test_search_follows_pagination(pages):
 
 def test_search_respects_max_pages(pages):
     client, calls = make_client(pages)
-    assert len(client.search_text("x", max_pages=1)) == 5
+    assert len(client.search_text("x", max_pages=1)) == 6
     assert len(calls) == 1
 
 
@@ -130,3 +133,25 @@ def test_budget_none_means_unlimited(pages):
     for _ in range(5):
         client.search_text("q", max_pages=1)
     assert client.calls == 5 == len(calls)
+
+
+def test_jewelry_is_excluded_by_type_and_by_name(pages):
+    # Type Google explicite, même si le nom dit « accessoires ».
+    assert place_to_lead(pages[0]["places"][5], fallback_wilaya="Alger") is None
+    # Pas de type utile : le nom arabe suffit.
+    assert place_to_lead(pages[1]["places"][2], fallback_wilaya="Oran") is None
+    # Une boutique de téléphonie reste acceptée.
+    assert place_to_lead(pages[0]["places"][0], fallback_wilaya="Alger") is not None
+
+
+def test_is_excluded_cases():
+    assert is_excluded("Bijouterie El Nour", None)
+    assert is_excluded("JOAILLERIE Royale", ["store"])
+    assert is_excluded("Sam's Jewellery", [])
+    assert is_excluded("محل الذهب", None)
+    assert is_excluded("Accessoires Mode", ["jewelry_store"])
+    assert is_excluded("Montres & Co", ["watch_store"])
+    assert not is_excluded("Phone Accessoires Bab El Oued", ["electronics_store"])
+    assert not is_excluded("محل النور للهواتف", None)
+    # « or » seul n'est pas un mot-clé : trop de noms le contiennent.
+    assert not is_excluded("Oran Tech Accessoires", ["store"])

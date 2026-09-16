@@ -3,7 +3,7 @@
 // Une seule source de vérité pour les prix : l'API publique de la boutique.
 // Rien n'est recopié ici — quand un pack change de prix au back-office, le
 // prochain message le cite juste. Un cache court évite d'appeler la boutique à
-// chaque clic sans jamais servir un prix vieux de plus de quelques minutes.
+// chaque clic sans jamais servir un prix vieux de plus d'une minute.
 package shop
 
 import (

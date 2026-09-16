@@ -36,11 +36,27 @@ FIELD_MASK = ",".join(
         "places.rating",
         "places.userRatingCount",
         "places.businessStatus",
+        "places.types",
         "nextPageToken",
     ]
 )
 
 SOURCE = "google_places"
+
+# « Accessoires » attire aussi les bijouteries : Google range parfois une
+# bijouterie sous « accessoires » et un gérant de bijouterie n'achète pas de
+# chargeurs. On écarte par le type Google quand il est là, et par le nom sinon.
+EXCLUDED_TYPES = frozenset({"jewelry_store", "watch_store", "gold_dealer"})
+EXCLUDED_NAME_WORDS = (
+    "bijou",  # bijoux, bijouterie, bijoutier
+    "joaill",  # joaillerie, joaillier
+    "jewel",  # jewelry, jewellery, jeweler
+    "مجوهرات",
+    "صائغ",  # orfèvre
+    "صياغة",
+    "ذهب",  # or
+    "bijoux",
+)
 
 # Signature d'un envoi HTTP : (corps JSON) -> réponse JSON.
 Poster = Callable[[dict[str, Any]], dict[str, Any]]
@@ -131,17 +147,32 @@ class PlacesClient:
         return places
 
 
+def is_excluded(name: str, types: list[str] | None) -> bool:
+    """Vrai pour une boutique qu'on ne prospecte pas (bijouterie, horlogerie, or).
+
+    Le type Google prime ; le nom rattrape les fiches sans type ou mal
+    classées (« Bijouterie El Nour » rangée sous « accessoires »).
+    """
+    if types and EXCLUDED_TYPES.intersection(types):
+        return True
+    lowered = name.casefold()
+    return any(word in lowered for word in EXCLUDED_NAME_WORDS)
+
+
 def place_to_lead(place: dict[str, Any], *, fallback_wilaya: str | None) -> dict[str, Any] | None:
     """Traduit une fiche Google en prospect à envoyer au service.
 
-    Renvoie None pour une fiche sans identifiant, sans nom, ou fermée
-    définitivement : rien à prospecter là.
+    Renvoie None pour une fiche sans identifiant, sans nom, fermée
+    définitivement, ou d'un commerce qu'on ne prospecte pas (bijouterie) :
+    rien à prospecter là.
     """
     place_id = place.get("id")
     name = clean_name((place.get("displayName") or {}).get("text"))
     if not place_id or not name:
         return None
     if place.get("businessStatus") == "CLOSED_PERMANENTLY":
+        return None
+    if is_excluded(name, place.get("types")):
         return None
 
     phone = normalize_phone(

@@ -33,7 +33,9 @@ une API officielle : elle ne disparaîtra pas.
 
 Il est composé par le service (`api/internal/message/message.go`), en arabe,
 avec le nom de la boutique, les trois promesses du site, jusqu'à cinq packs
-avec prix et économie, et le lien du catalogue marqué
+**au prix de la pièce** (prix du pack ÷ quantité, chiffres collés — « 1600 دج
+للقطعة »), une note « vente par packs de 5, 10 pièces ou plus », et le lien du
+catalogue marqué
 `utm_source=whatsapp&utm_campaign=prospection` — les commandes qui en viennent
 apparaissent dans **Audience → Performance des campagnes**.
 

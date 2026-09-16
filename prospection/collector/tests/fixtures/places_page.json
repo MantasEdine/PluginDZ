@@ -4,16 +4,43 @@
       "places": [
         {
           "id": "ChIJ-alger-nour",
-          "displayName": { "text": "محل النور للهواتف", "languageCode": "ar" },
+          "displayName": {
+            "text": "محل النور للهواتف",
+            "languageCode": "ar"
+          },
           "formattedAddress": "12 Rue Didouche Mourad, Alger Centre 16000, Algérie",
           "addressComponents": [
-            { "longText": "Alger Centre", "shortText": "Alger Centre", "types": ["locality", "political"] },
-            { "longText": "Wilaya d'Alger", "shortText": "Alger", "types": ["administrative_area_level_1", "political"] },
-            { "longText": "Algérie", "shortText": "DZ", "types": ["country", "political"] }
+            {
+              "longText": "Alger Centre",
+              "shortText": "Alger Centre",
+              "types": [
+                "locality",
+                "political"
+              ]
+            },
+            {
+              "longText": "Wilaya d'Alger",
+              "shortText": "Alger",
+              "types": [
+                "administrative_area_level_1",
+                "political"
+              ]
+            },
+            {
+              "longText": "Algérie",
+              "shortText": "DZ",
+              "types": [
+                "country",
+                "political"
+              ]
+            }
           ],
           "nationalPhoneNumber": "0661 23 45 67",
           "internationalPhoneNumber": "+213 661 23 45 67",
-          "location": { "latitude": 36.7538, "longitude": 3.0588 },
+          "location": {
+            "latitude": 36.7538,
+            "longitude": 3.0588
+          },
           "googleMapsUri": "https://maps.google.com/?cid=1111",
           "websiteUri": "https://example.dz/nour",
           "rating": 4.6,
@@ -22,14 +49,27 @@
         },
         {
           "id": "ChIJ-alger-fixe",
-          "displayName": { "text": "Phone Accessoires Bab El Oued", "languageCode": "fr" },
+          "displayName": {
+            "text": "Phone Accessoires Bab El Oued",
+            "languageCode": "fr"
+          },
           "formattedAddress": "45 Avenue Colonel Lotfi, Bab El Oued, Alger, Algérie",
           "addressComponents": [
-            { "longText": "Alger", "shortText": "Alger", "types": ["administrative_area_level_1", "political"] }
+            {
+              "longText": "Alger",
+              "shortText": "Alger",
+              "types": [
+                "administrative_area_level_1",
+                "political"
+              ]
+            }
           ],
           "nationalPhoneNumber": "021 45 67 89",
           "internationalPhoneNumber": "+213 21 45 67 89",
-          "location": { "latitude": 36.79, "longitude": 3.05 },
+          "location": {
+            "latitude": 36.79,
+            "longitude": 3.05
+          },
           "googleMapsUri": "https://maps.google.com/?cid=2222",
           "rating": 4.1,
           "userRatingCount": 18,
@@ -37,25 +77,52 @@
         },
         {
           "id": "ChIJ-alger-sans-tel",
-          "displayName": { "text": "  Espace   Mobile  ", "languageCode": "fr" },
+          "displayName": {
+            "text": "  Espace   Mobile  ",
+            "languageCode": "fr"
+          },
           "formattedAddress": "Hydra, Alger, Algérie",
-          "location": { "latitude": 36.74, "longitude": 3.03 },
+          "location": {
+            "latitude": 36.74,
+            "longitude": 3.03
+          },
           "googleMapsUri": "https://maps.google.com/?cid=3333",
           "businessStatus": "OPERATIONAL"
         },
         {
           "id": "ChIJ-alger-ferme",
-          "displayName": { "text": "Ancien Magasin GSM", "languageCode": "fr" },
+          "displayName": {
+            "text": "Ancien Magasin GSM",
+            "languageCode": "fr"
+          },
           "formattedAddress": "Kouba, Alger, Algérie",
           "nationalPhoneNumber": "0550 00 00 00",
           "businessStatus": "CLOSED_PERMANENTLY"
         },
         {
           "id": "ChIJ-alger-etranger",
-          "displayName": { "text": "Import Export Téléphonie", "languageCode": "fr" },
+          "displayName": {
+            "text": "Import Export Téléphonie",
+            "languageCode": "fr"
+          },
           "formattedAddress": "Dar El Beida, Alger, Algérie",
           "nationalPhoneNumber": "+33 6 12 34 56 78",
           "internationalPhoneNumber": "+33 6 12 34 56 78",
+          "businessStatus": "OPERATIONAL"
+        },
+        {
+          "id": "ChIJ-alger-bijouterie",
+          "displayName": {
+            "text": "Accessoires & Bijoux Sarah",
+            "languageCode": "fr"
+          },
+          "formattedAddress": "Rue Didouche Mourad, Alger",
+          "nationalPhoneNumber": "0661 00 00 09",
+          "internationalPhoneNumber": "+213 661 00 00 09",
+          "types": [
+            "jewelry_store",
+            "store"
+          ],
           "businessStatus": "OPERATIONAL"
         }
       ],
@@ -65,24 +132,53 @@
       "places": [
         {
           "id": "ChIJ-alger-nour",
-          "displayName": { "text": "محل النور للهواتف", "languageCode": "ar" },
+          "displayName": {
+            "text": "محل النور للهواتف",
+            "languageCode": "ar"
+          },
           "formattedAddress": "12 Rue Didouche Mourad, Alger Centre 16000, Algérie",
           "nationalPhoneNumber": "0661 23 45 67",
           "businessStatus": "OPERATIONAL"
         },
         {
           "id": "ChIJ-oran-tech",
-          "displayName": { "text": "Oran Tech Accessoires", "languageCode": "fr" },
+          "displayName": {
+            "text": "Oran Tech Accessoires",
+            "languageCode": "fr"
+          },
           "formattedAddress": "Boulevard de l'ALN, 31000 Oran, Algérie",
           "addressComponents": [
-            { "longText": "ولاية وهران", "shortText": "وهران", "types": ["administrative_area_level_1", "political"] }
+            {
+              "longText": "ولاية وهران",
+              "shortText": "وهران",
+              "types": [
+                "administrative_area_level_1",
+                "political"
+              ]
+            }
           ],
           "nationalPhoneNumber": "0770 11 22 33",
           "internationalPhoneNumber": "+213 770 11 22 33",
-          "location": { "latitude": 35.6976, "longitude": -0.6337 },
+          "location": {
+            "latitude": 35.6976,
+            "longitude": -0.6337
+          },
           "googleMapsUri": "https://maps.google.com/?cid=4444",
           "rating": 4.8,
           "userRatingCount": 240,
+          "businessStatus": "OPERATIONAL"
+        },
+        {
+          "id": "ChIJ-oran-or",
+          "displayName": {
+            "text": "مجوهرات الذهب الأصيل",
+            "languageCode": "ar"
+          },
+          "formattedAddress": "Rue Larbi Ben M'hidi, Oran",
+          "nationalPhoneNumber": "041 00 00 09",
+          "types": [
+            "store"
+          ],
           "businessStatus": "OPERATIONAL"
         }
       ]

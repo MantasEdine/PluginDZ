@@ -40,7 +40,10 @@ func main() {
 	}
 	defer db.Close()
 
-	packs := shop.New(cfg.ShopAPIURL, 5*time.Minute)
+	// Une minute de cache : un pack ajouté ou modifié au back-office est cité
+	// dans le message suivant presque tout de suite, sans appeler la boutique
+	// à chaque clic.
+	packs := shop.New(cfg.ShopAPIURL, time.Minute)
 	api := httpapi.New(cfg, db, packs, time.Now)
 
 	srv := &http.Server{
