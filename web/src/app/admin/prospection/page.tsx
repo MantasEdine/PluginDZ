@@ -77,6 +77,17 @@ interface Contact {
 
 const api = (path: string, init?: RequestInit) => adminFetch<{ data: unknown }>(`${PROSPECTION_URL}${path}`, init);
 
+/**
+ * Message d'erreur lisible par le gérant. Un TypeError vient de fetch
+ * lui-même : service éteint, URL fausse, ou méthode/origine refusée (CORS).
+ * Tout autre message vient du service et dit déjà ce qui cloche (jeton
+ * refusé, erreur interne…).
+ */
+const describeError = (err: unknown) =>
+  err instanceof TypeError
+    ? `Service de prospection injoignable (${PROSPECTION_URL}) : est-il démarré, et l'origine du back-office est-elle dans CORS_ORIGINS ?`
+    : (err as Error).message;
+
 export default function ProspectionPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [wilayas, setWilayas] = useState<string[]>([]);
@@ -100,20 +111,28 @@ export default function ProspectionPage() {
       setWilayas(w.data as string[]);
       setPage(p.data as Page);
     } catch (err) {
-      // Un TypeError vient de fetch lui-même : service éteint, URL fausse ou
-      // origine refusée (CORS). Tout autre message vient du service et dit
-      // déjà ce qui cloche (jeton refusé, erreur interne…).
-      setError(
-        err instanceof TypeError
-          ? `Service de prospection injoignable (${PROSPECTION_URL}) : est-il démarré, et l'origine du back-office est-elle dans CORS_ORIGINS ?`
-          : (err as Error).message,
-      );
+      setError(describeError(err));
     }
   }, [wilaya, status, query, pageNo]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Vider les « nouveau » : utile après un changement de filtre du collecteur
+  // (on relance la collecte sur une base propre). Les prospects déjà suivis —
+  // statut ou note — ne sont pas touchés : le service ne les supprime pas.
+  const purgeNew = async () => {
+    const n = stats?.byStatus.nouveau ?? 0;
+    if (!window.confirm(`Supprimer les ${n} prospects « nouveau » ? Les prospects contactés ou annotés sont conservés.`)) return;
+    try {
+      await api('/leads/nouveaux', { method: 'DELETE' });
+      setPageNo(1);
+      await load();
+    } catch (err) {
+      setError(describeError(err));
+    }
+  };
 
   const totalPages = page ? Math.max(1, Math.ceil(page.total / page.perPage)) : 1;
   const contacted = stats
@@ -130,6 +149,11 @@ export default function ProspectionPage() {
             Boutiques d&apos;accessoires repérées sur Google. Un clic ouvre WhatsApp avec le message prêt — à vous d&apos;envoyer.
           </p>
         </div>
+        {(stats?.byStatus.nouveau ?? 0) > 0 && (
+          <button type="button" className="btn-outline min-h-11 text-red-700" onClick={() => void purgeNew()}>
+            Vider les nouveaux ({stats?.byStatus.nouveau})
+          </button>
+        )}
       </div>
 
       {error && (

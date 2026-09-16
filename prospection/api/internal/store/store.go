@@ -62,6 +62,10 @@ type Store interface {
 	Stats(ctx context.Context) (Stats, error)
 	// Wilayas : celles où l'on a au moins un prospect, pour le filtre.
 	Wilayas(ctx context.Context) ([]string, error)
+	// DeleteNew supprime les prospects encore « nouveau » — jamais contactés,
+	// sans note — et rend leur nombre. Sert à repartir de zéro après un
+	// changement de filtre du collecteur, sans perdre le suivi commercial.
+	DeleteNew(ctx context.Context) (int, error)
 }
 
 // normalizeFilter borne la pagination à des valeurs raisonnables.
@@ -245,6 +249,22 @@ func (m *Memory) Stats(_ context.Context) (Stats, error) {
 		}
 	}
 	return s, nil
+}
+
+func (m *Memory) DeleteNew(_ context.Context) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	kept := m.items[:0]
+	n := 0
+	for _, l := range m.items {
+		if l.Status == leads.StatusNouveau {
+			n++
+			continue
+		}
+		kept = append(kept, l)
+	}
+	m.items = kept
+	return n, nil
 }
 
 func (m *Memory) Wilayas(_ context.Context) ([]string, error) {

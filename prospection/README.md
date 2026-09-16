@@ -148,6 +148,7 @@ Réponses `{ "data": … }` en succès, `{ "error": "…" }` sinon.
 | `GET /leads?wilaya&status&q&page&perPage` | jeton admin | liste paginée |
 | `GET /leads/{id}` | jeton admin | un prospect |
 | `PATCH /leads/{id}` | jeton admin | `{ "status"?, "note"? }` |
+| `DELETE /leads/nouveaux` | jeton admin | supprime les prospects encore « nouveau » (jamais contactés, sans note) : `{ "deleted": n }` |
 | `GET /leads/{id}/contact` | jeton admin | message, `whatsappUrl`, `telUrl`, `contactable` |
 | `GET /stats` | jeton admin | totaux par statut et par wilaya |
 | `GET /wilayas` | jeton admin | wilayas ayant au moins un prospect |

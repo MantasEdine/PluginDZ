@@ -396,11 +396,52 @@ func TestCORS(t *testing.T) {
 	if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:3000" {
 		t.Errorf("préflight : %d %v", rec.Code, rec.Header())
 	}
+	// Chaque méthode que le back-office utilise doit être annoncée, sinon le
+	// navigateur bloque l'appel avant même qu'il parte (« Failed to fetch »).
+	for _, m := range []string{"GET", "PATCH", "DELETE"} {
+		if !strings.Contains(rec.Header().Get("Access-Control-Allow-Methods"), m) {
+			t.Errorf("méthode %s absente de Access-Control-Allow-Methods : %q", m, rec.Header().Get("Access-Control-Allow-Methods"))
+		}
+	}
 	req = httptest.NewRequest(http.MethodOptions, "/leads", nil)
 	req.Header.Set("Origin", "https://site-inconnu.example")
 	rec = httptest.NewRecorder()
 	s.Handler().ServeHTTP(rec, req)
 	if rec.Header().Get("Access-Control-Allow-Origin") != "" {
 		t.Error("une origine inconnue ne doit rien recevoir")
+	}
+}
+
+func TestDeleteNew_KeepsFollowedLeads(t *testing.T) {
+	s, _ := newTestServer(t, fixedPacks{})
+	tok := adminToken(t, testSecret, time.Hour)
+	auth := map[string]string{"Authorization": "Bearer " + tok}
+
+	do(t, s, "POST", "/internal/leads", map[string]any{"leads": []map[string]any{
+		{"source": "g", "sourceId": "a", "name": "A", "phone": "0661000001"},
+		{"source": "g", "sourceId": "b", "name": "B", "phone": "0661000002"},
+		{"source": "g", "sourceId": "c", "name": "C", "phone": "0661000003"},
+	}}, map[string]string{"X-Collector-Token": testCollector})
+	// Le second est contacté : il doit survivre.
+	rec, _ := do(t, s, "PATCH", "/leads/2", map[string]any{"status": "contacte"}, auth)
+	if rec.Code != 200 {
+		t.Fatalf("PATCH : %d", rec.Code)
+	}
+
+	// Sans jeton : refusé, rien n'est supprimé.
+	if rec, _ := do(t, s, "DELETE", "/leads/nouveaux", nil, nil); rec.Code != 401 {
+		t.Errorf("purge sans jeton : HTTP %d", rec.Code)
+	}
+	rec, body := do(t, s, "DELETE", "/leads/nouveaux", nil, auth)
+	if rec.Code != 200 {
+		t.Fatalf("purge : HTTP %d %v", rec.Code, body)
+	}
+	if got := body["data"].(map[string]any)["deleted"].(float64); got != 2 {
+		t.Errorf("supprimés : %v, attendu 2", got)
+	}
+	_, st := do(t, s, "GET", "/stats", nil, auth)
+	data := st["data"].(map[string]any)
+	if data["total"].(float64) != 1 {
+		t.Errorf("après purge, total = %v", data["total"])
 	}
 }

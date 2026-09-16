@@ -66,6 +66,7 @@ func (s *Server) routes() {
 	s.mux.Handle("POST /internal/leads", collector(http.HandlerFunc(s.ingest)))
 
 	s.mux.Handle("GET /leads", admin(http.HandlerFunc(s.list)))
+	s.mux.Handle("DELETE /leads/nouveaux", admin(http.HandlerFunc(s.deleteNew)))
 	s.mux.Handle("GET /leads/{id}", admin(http.HandlerFunc(s.get)))
 	s.mux.Handle("PATCH /leads/{id}", admin(http.HandlerFunc(s.update)))
 	s.mux.Handle("GET /leads/{id}/contact", admin(http.HandlerFunc(s.contact)))
@@ -257,6 +258,17 @@ func (s *Server) contact(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"data": out})
 }
 
+// deleteNew vide les prospects jamais touchés. Ceux qui ont un statut ou une
+// note restent : c'est le travail du gérant, on ne l'efface pas d'un clic.
+func (s *Server) deleteNew(w http.ResponseWriter, r *http.Request) {
+	n, err := s.store.DeleteNew(r.Context())
+	if err != nil {
+		s.internal(w, "deleteNew", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": map[string]int{"deleted": n}})
+}
+
 func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 	st, err := s.store.Stats(r.Context())
 	if err != nil {
@@ -327,7 +339,7 @@ func (s *Server) cors(next http.Handler) http.Handler {
 		if origin != "" && (allowed[origin] || allowed["*"]) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Collector-Token")
 			w.Header().Set("Access-Control-Max-Age", "600")
 		}

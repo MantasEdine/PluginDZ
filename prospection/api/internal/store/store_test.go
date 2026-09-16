@@ -131,4 +131,32 @@ func runStoreScenarios(t *testing.T, st Store) {
 	if len(ws) != 2 || ws[0] != "Alger" || ws[1] != "Oran" {
 		t.Errorf("wilayas : %v", ws)
 	}
+	// --- purge des « nouveau » : le suivi commercial reste ---
+	// À ce point : l2 est passé « client » plus haut ; l1 et l3 sont encore
+	// « nouveau ». La purge doit en retirer exactement deux et garder l2.
+	deleted, err := st.DeleteNew(ctx)
+	if err != nil {
+		t.Fatalf("DeleteNew : %v", err)
+	}
+	if deleted != 2 {
+		t.Errorf("purge : %d supprimés, attendu 2", deleted)
+	}
+	after, err := st.Stats(ctx)
+	if err != nil {
+		t.Fatalf("stats après purge : %v", err)
+	}
+	if after.ByStatus[leads.StatusNouveau] != 0 || after.Total != 1 {
+		t.Errorf("après purge : %+v (attendu : un seul prospect, client)", after)
+	}
+	if _, err := st.Get(ctx, l2.ID); err != nil {
+		t.Errorf("le prospect suivi doit survivre à la purge : %v", err)
+	}
+	if _, err := st.Get(ctx, l1.ID); err == nil {
+		t.Error("un « nouveau » doit avoir disparu")
+	}
+	// Une seconde purge ne trouve plus rien.
+	if n, err := st.DeleteNew(ctx); err != nil || n != 0 {
+		t.Errorf("seconde purge : %d, %v", n, err)
+	}
+
 }
