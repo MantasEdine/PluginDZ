@@ -100,7 +100,14 @@ export default function ProspectionPage() {
       setWilayas(w.data as string[]);
       setPage(p.data as Page);
     } catch (err) {
-      setError((err as Error).message);
+      // Un TypeError vient de fetch lui-même : service éteint, URL fausse ou
+      // origine refusée (CORS). Tout autre message vient du service et dit
+      // déjà ce qui cloche (jeton refusé, erreur interne…).
+      setError(
+        err instanceof TypeError
+          ? `Service de prospection injoignable (${PROSPECTION_URL}) : est-il démarré, et l'origine du back-office est-elle dans CORS_ORIGINS ?`
+          : (err as Error).message,
+      );
     }
   }, [wilaya, status, query, pageNo]);
 
@@ -127,7 +134,7 @@ export default function ProspectionPage() {
 
       {error && (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error} — le service de prospection est-il démarré ({PROSPECTION_URL}) ?
+          {error}
         </p>
       )}
 

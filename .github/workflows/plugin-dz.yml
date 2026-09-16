@@ -123,6 +123,9 @@ jobs:
           go-version-file: prospection/api/go.mod
           cache-dependency-path: prospection/api/go.sum
 
+      - name: Format
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "::error::fichiers non formatés (gofmt -w .)"; exit 1; }
+
       - name: Vet
         run: go vet ./...
 

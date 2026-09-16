@@ -18,8 +18,14 @@ export function clearToken(): void {
 }
 
 /**
- * Appel authentifié au back-office. Un 401 purge le jeton et renvoie vers la
- * page de connexion — la session a expiré.
+ * Appel authentifié au back-office.
+ *
+ * Un 401 de l'API boutique veut dire « session expirée » : on purge le jeton
+ * et on renvoie vers la connexion. Un 401 d'un autre service (prospection)
+ * ne prouve rien sur la session — le plus souvent, c'est ce service qui est
+ * mal configuré (JWT_SECRET différent). On remonte alors son message à la
+ * page, sans déconnecter : sinon l'admin est éjecté en boucle dès qu'il
+ * ouvre la page concernée.
  */
 export async function adminFetch<T>(
   path: string,
@@ -30,7 +36,8 @@ export async function adminFetch<T>(
 
   // Un chemin relatif vise l'API boutique ; une URL absolue vise un autre
   // service (prospection) avec le même jeton.
-  const url = /^https?:\/\//.test(path) ? path : `${PUBLIC_API_URL}${path}`;
+  const isExternal = /^https?:\/\//.test(path);
+  const url = isExternal ? path : `${PUBLIC_API_URL}${path}`;
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -40,7 +47,7 @@ export async function adminFetch<T>(
     },
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && !isExternal) {
     clearToken();
     if (typeof window !== 'undefined') window.location.href = '/admin/login';
     throw new Error('Session expirée');

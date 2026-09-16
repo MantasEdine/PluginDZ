@@ -19,10 +19,10 @@ func TestBuild_Content(t *testing.T) {
 	msg := Build("Boutique Ahmed", samplePacks(), opts)
 
 	for _, want := range []string{
-		"السلام عليكم",                 // salutation
-		"Boutique Ahmed",               // personnalisation
-		"Plugin.dz",                    // qui écrit
-		"منتجات أصلية 100%",            // les trois promesses
+		"السلام عليكم",      // salutation
+		"Boutique Ahmed",    // personnalisation
+		"Plugin.dz",         // qui écrit
+		"منتجات أصلية 100%", // les trois promesses
 		"التوصيل مجاني إلى 69 ولاية",
 		"الدفع عند الاستلام",
 		"Pack 10 Chargeurs iPhone Hoco N7 20W — 12 500 دج (10 قطعة، توفر 1 500 دج)",

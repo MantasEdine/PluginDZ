@@ -46,10 +46,12 @@ func Load() (Config, error) {
 	production := os.Getenv("APP_ENV") == "production"
 
 	cfg := Config{
-		Port:            envOr("PORT", "8080"),
-		DatabaseURL:     os.Getenv("DATABASE_URL"),
-		JWTSecret:       os.Getenv("JWT_SECRET"),
-		CollectorToken:  os.Getenv("COLLECTOR_TOKEN"),
+		Port:        envOr("PORT", "8080"),
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		// Les secrets sont copiés-collés d'un hébergeur à l'autre : une espace
+		// ou un retour à la ligne parasite ne doit pas les faire diverger.
+		JWTSecret:       strings.TrimSpace(os.Getenv("JWT_SECRET")),
+		CollectorToken:  strings.TrimSpace(os.Getenv("COLLECTOR_TOKEN")),
 		ShopAPIURL:      strings.TrimRight(envOr("SHOP_API_URL", "http://localhost:4000"), "/"),
 		SiteURL:         strings.TrimRight(envOr("SITE_URL", "https://plugin-dz.com"), "/"),
 		CORSOrigins:     splitList(envOr("CORS_ORIGINS", "http://localhost:3000")),
