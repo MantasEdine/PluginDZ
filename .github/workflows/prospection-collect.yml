@@ -29,10 +29,10 @@ jobs:
   collect:
     name: Collecter et envoyer
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: prospection/collector
 
+    # Pas de working-directory par défaut : la première étape tourne avant le
+    # checkout, quand le dossier du collecteur n'existe pas encore. Les étapes
+    # qui en ont besoin le précisent elles-mêmes.
     steps:
       - name: Vérifier la configuration
         id: config
@@ -58,10 +58,12 @@ jobs:
 
       - name: Installer
         if: steps.config.outputs.configured == 'true'
+        working-directory: prospection/collector
         run: pip install .
 
       - name: Collecter
         if: steps.config.outputs.configured == 'true'
+        working-directory: prospection/collector
         env:
           PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
           PROSPECTION_API_URL: ${{ secrets.PROSPECTION_API_URL }}
