@@ -12,6 +12,8 @@ import {
   visitsBetween,
   visitsByDay,
   visitsBySource,
+  purchaseFunnel,
+  topPaths,
 } from '../lib/analytics';
 import { asyncHandler } from '../middleware/error';
 
@@ -94,13 +96,19 @@ analyticsRouter.get(
     const dailyStart = addDays(today, -29);
     const tomorrow = addDays(today, 1);
 
-    const [byDay, sources, todayV, yesterdayV, last7, prev7] = await Promise.all([
+    const weekStart = addDays(today, -6);
+
+    const [byDay, sources, todayV, yesterdayV, last7, prev7, funnel, pages] = await Promise.all([
       visitsByDay(dailyStart),
       visitsBySource(dailyStart),
       visitsBetween(today, tomorrow),
       visitsBetween(addDays(today, -1), today),
-      visitsBetween(addDays(today, -6), tomorrow),
-      visitsBetween(addDays(today, -13), addDays(today, -6)),
+      visitsBetween(weekStart, tomorrow),
+      visitsBetween(addDays(today, -13), weekStart),
+      // Parcours et pages sur 7 jours : assez pour lisser, assez court pour
+      // refléter la semaine en cours (une campagne TikTok se juge à la semaine).
+      purchaseFunnel(weekStart, tomorrow),
+      topPaths(weekStart, tomorrow),
     ]);
 
     const daily = daySeries(dailyStart, today).map((day) => ({
@@ -113,6 +121,8 @@ analyticsRouter.get(
       data: {
         daily,
         sources,
+        funnel,
+        pages,
         summary: {
           today: todayV,
           yesterday: yesterdayV,

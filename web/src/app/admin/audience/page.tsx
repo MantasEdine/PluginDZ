@@ -8,9 +8,14 @@ import { formatDa } from '@/lib/format';
 import { StatTile } from '@/components/admin/StatTile';
 
 interface VBucket { views: number; visitors: number }
+type FunnelKey = 'site' | 'product' | 'cart' | 'checkout' | 'confirmation';
 interface VisitorData {
   daily: { day: string; views: number; visitors: number }[];
   sources: { source: string; views: number; visitors: number }[];
+  /** Parcours d'achat sur 7 jours : visiteurs uniques ayant atteint chaque étape. */
+  funnel: { key: FunnelKey; visitors: number }[];
+  /** Pages les plus vues sur 7 jours. */
+  pages: { path: string; views: number; visitors: number }[];
   summary: {
     today: VBucket; yesterday: VBucket;
     last7Days: VBucket; previous7Days: VBucket;
@@ -30,6 +35,27 @@ interface CampaignData {
 function dayLabel(iso: string): string {
   const [, m, d] = iso.split('-');
   return `${d}/${m}`;
+}
+
+const FUNNEL_LABELS: Record<FunnelKey, string> = {
+  site: 'Ont ouvert le site',
+  product: 'Ont ouvert une fiche produit ou pack',
+  cart: 'Ont ouvert le panier',
+  checkout: 'Ont ouvert le formulaire de commande',
+  confirmation: 'Ont vu la confirmation (commande passée)',
+};
+
+/** Nom lisible d'une page pour le classement des pages vues. */
+function pathLabel(path: string): string {
+  if (path === '/') return 'Accueil';
+  if (path === '/produits') return 'Catalogue produits';
+  if (path === '/packs') return 'Catalogue packs';
+  if (path === '/marques') return 'Marques';
+  if (path === '/panier') return 'Panier';
+  if (path === '/commande') return 'Formulaire de commande';
+  if (path === '/commande/confirmation') return 'Confirmation de commande';
+  if (path === '/suivi') return 'Suivi de commande';
+  return path;
 }
 
 /** Nom lisible pour une source de trafic connue. */
@@ -72,6 +98,7 @@ export default function AudienceDashboard() {
 
   const { summary } = data;
   const nf = (v: number) => v.toLocaleString('fr-FR');
+  const siteVisitors = data.funnel.find((step) => step.key === 'site')?.visitors ?? 0;
 
   return (
     <div>
@@ -123,6 +150,45 @@ export default function AudienceDashboard() {
           data={data.daily.map((d) => ({ label: dayLabel(d.day), value: d.views }))}
           line={data.daily.map((d) => d.visitors)}
           formatValue={(v) => nf(v)}
+        />
+      </section>
+
+      {/* Parcours d'achat : où le trafic s'arrête. Chaque barre est relative à
+          la première (100 % = tous les visiteurs de la semaine). */}
+      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-bold text-navy-900">Parcours d&apos;achat</h2>
+          <span className="text-xs text-slate-400">7 derniers jours</span>
+        </div>
+        <HBarList
+          data={data.funnel.map((step) => ({
+            label: FUNNEL_LABELS[step.key],
+            value: step.visitors,
+            sub: siteVisitors > 0 ? `${Math.round((step.visitors / siteVisitors) * 100)} %` : undefined,
+          }))}
+          formatValue={(v) => `${nf(v)} visiteur(s)`}
+          color="var(--color-teal-500)"
+          emptyText="Aucune visite sur 7 jours."
+        />
+        <p className="mt-4 text-xs text-slate-400">
+          Visiteurs uniques ayant atteint chaque étape au moins une fois. La marche la plus haute
+          entre deux barres est l&apos;endroit où vous perdez vos visiteurs.
+        </p>
+      </section>
+
+      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-bold text-navy-900">Pages les plus vues</h2>
+          <span className="text-xs text-slate-400">7 derniers jours</span>
+        </div>
+        <HBarList
+          data={data.pages.map((p) => ({
+            label: pathLabel(p.path),
+            value: p.views,
+            sub: `${nf(p.visitors)} visiteur(s)`,
+          }))}
+          formatValue={(v) => `${nf(v)} vue(s)`}
+          emptyText="Aucune page vue sur 7 jours."
         />
       </section>
 
