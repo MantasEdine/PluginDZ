@@ -37,12 +37,13 @@ function dayLabel(iso: string): string {
   return `${d}/${m}`;
 }
 
+// Libellés courts : sur un téléphone, la barre et le compte doivent tenir sur une ligne.
 const FUNNEL_LABELS: Record<FunnelKey, string> = {
-  site: 'Ont ouvert le site',
-  product: 'Ont ouvert une fiche produit ou pack',
-  cart: 'Ont ouvert le panier',
-  checkout: 'Ont ouvert le formulaire de commande',
-  confirmation: 'Ont vu la confirmation (commande passée)',
+  site: 'Site ouvert',
+  product: 'Fiche produit ou pack',
+  cart: 'Panier',
+  checkout: 'Formulaire de commande',
+  confirmation: 'Commande passée',
 };
 
 /** Nom lisible d'une page pour le classement des pages vues. */
