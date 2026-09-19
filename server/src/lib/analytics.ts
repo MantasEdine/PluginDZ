@@ -136,6 +136,67 @@ export async function visitsBetween(startDay: string, endDay: string): Promise<{
   return { views: Number(r?.views ?? 0), visitors: Number(r?.visitors ?? 0) };
 }
 
+/** Une étape du parcours d'achat, avec le nombre de visiteurs uniques qui l'ont atteinte. */
+export interface FunnelStep {
+  key: 'site' | 'product' | 'cart' | 'checkout' | 'confirmation';
+  visitors: number;
+}
+
+/**
+ * Parcours d'achat sur [start, end[ : combien de visiteurs uniques ont vu le site,
+ * une fiche (produit ou pack), le panier, le formulaire de commande, puis la
+ * confirmation. Chaque étape compte les visiteurs distincts ayant ouvert au moins
+ * une page de ce type — c'est là qu'on voit où le trafic s'arrête.
+ *
+ * La « confirmation » est une page vue, pas une commande en base : un visiteur qui
+ * commande deux fois compte une fois. Pour le nombre réel de commandes, voir Revenus.
+ */
+export async function purchaseFunnel(startDay: string, endDay: string): Promise<FunnelStep[]> {
+  const rows = await prisma.$queryRaw<{ key: string; visitors: bigint }[]>`
+    SELECT step AS key, COUNT(DISTINCT visitor_id) AS visitors
+    FROM (
+      SELECT visitor_id, 'site' AS step FROM visits
+      WHERE (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+      UNION ALL
+      SELECT visitor_id, 'product' FROM visits
+      WHERE (path LIKE '/produits/%' OR path LIKE '/packs/%')
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+      UNION ALL
+      SELECT visitor_id, 'cart' FROM visits
+      WHERE path = '/panier'
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+      UNION ALL
+      SELECT visitor_id, 'checkout' FROM visits
+      WHERE path = '/commande'
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+      UNION ALL
+      SELECT visitor_id, 'confirmation' FROM visits
+      WHERE path = '/commande/confirmation'
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+        AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+    ) steps
+    GROUP BY step`;
+  const found = new Map(rows.map((r) => [r.key, Number(r.visitors)]));
+  const order: FunnelStep['key'][] = ['site', 'product', 'cart', 'checkout', 'confirmation'];
+  return order.map((key) => ({ key, visitors: found.get(key) ?? 0 }));
+}
+
+/** Pages les plus vues sur [start, end[ : chemin, vues, visiteurs uniques. */
+export async function topPaths(startDay: string, endDay: string, limit = 10): Promise<{ path: string; views: number; visitors: number }[]> {
+  const rows = await prisma.$queryRaw<{ path: string; views: bigint; visitors: bigint }[]>`
+    SELECT path, COUNT(*) AS views, COUNT(DISTINCT visitor_id) AS visitors
+    FROM visits
+    WHERE (created_at AT TIME ZONE ${SHOP_TZ})::date >= ${startDay}::date
+      AND (created_at AT TIME ZONE ${SHOP_TZ})::date < ${endDay}::date
+    GROUP BY path
+    ORDER BY views DESC
+    LIMIT ${limit}`;
+  return rows.map((r) => ({ path: r.path, views: Number(r.views), visitors: Number(r.visitors) }));
+}
 
 export interface CampaignRow {
   campaign: string;
